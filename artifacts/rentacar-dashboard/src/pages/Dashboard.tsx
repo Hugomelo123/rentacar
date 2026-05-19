@@ -96,7 +96,7 @@ export default function Dashboard() {
       </div>
 
       {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[600px]">
         
         {/* Left Col: Today's Reservations */}
         <Card className="lg:col-span-2 flex flex-col border-border/50 shadow-md h-full">
@@ -255,7 +255,7 @@ function ReservationModal({ id, onClose, statusToUpdate, setStatusToUpdate }: an
 
   return (
     <Dialog open={!!id} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl bg-card border-border">
+      <DialogContent className="w-[95vw] max-w-2xl bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-2xl">Detalhes da Reserva #{id}</DialogTitle>
           <DialogDescription>

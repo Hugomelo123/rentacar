@@ -21,7 +21,7 @@ type Message = {
   vehicles?: any[];
 };
 
-export function WhatsAppSimulator() {
+export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -217,19 +217,21 @@ export function WhatsAppSimulator() {
   return (
     <div className="flex flex-col h-full bg-[#E5DDD5] text-black">
       {/* Header */}
-      <div className="bg-[#075E54] text-white p-3 flex items-center shadow-md z-10">
-        <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
-          <Car className="h-5 w-5" />
+      {!hideHeader && (
+        <div className="bg-[#075E54] text-white p-3 flex items-center shadow-md z-10">
+          <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
+            <Car className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-base leading-tight">RentaCar Bot</h3>
+            <p className="text-xs text-white/80">em linha</p>
+          </div>
+          <div className="flex items-center gap-4 text-white">
+            <Phone className="h-5 w-5" />
+            <MoreVertical className="h-5 w-5" />
+          </div>
         </div>
-        <div className="flex-1">
-          <h3 className="font-bold text-base leading-tight">RentaCar Bot</h3>
-          <p className="text-xs text-white/80">em linha</p>
-        </div>
-        <div className="flex items-center gap-4 text-white">
-          <Phone className="h-5 w-5" />
-          <MoreVertical className="h-5 w-5" />
-        </div>
-      </div>
+      )}
 
       {/* Chat Area */}
       <div 
