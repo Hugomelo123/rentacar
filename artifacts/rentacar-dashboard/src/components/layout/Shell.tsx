@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Car, Settings, MessageCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,14 +12,27 @@ const navItems = [
   { href: "/settings", icon: Settings, label: "Config" },
 ];
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    setIsDesktop(mq.matches);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappOpen, setWhatsappOpen] = useState(true);
+  const isDesktop = useIsDesktop();
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground dark">
 
-      {/* ── Sidebar — hidden on mobile, visible on lg+ ── */}
+      {/* ── Desktop Sidebar ── */}
       <aside className="hidden lg:flex w-16 xl:w-20 border-r border-border bg-card flex-col items-center py-6 shrink-0">
         <div className="h-10 w-10 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-bold text-xl mb-8 shadow-lg shadow-primary/20">
           R
@@ -48,7 +61,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* WhatsApp toggle — desktop sidebar */}
         <div className="mt-auto px-2 xl:px-3 w-full">
           <button
             onClick={() => setWhatsappOpen((v) => !v)}
@@ -70,7 +82,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile top bar */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
-          <div className="h-8 w-8 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold">
+          <div className="h-8 w-8 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold text-sm">
             R
           </div>
           <span className="font-semibold text-sm">RentaCar Dashboard</span>
@@ -79,7 +91,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             className="relative p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           >
             <MessageCircle className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#25D366]" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#25D366]" />
           </button>
         </header>
 
@@ -96,7 +108,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <Link key={item.href} href={item.href} className="flex-1">
                 <div
                   className={cn(
-                    "flex flex-col items-center justify-center py-2 gap-1 transition-colors",
+                    "flex flex-col items-center justify-center py-2 gap-0.5 transition-colors",
                     isActive ? "text-primary" : "text-muted-foreground"
                   )}
                 >
@@ -108,7 +120,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           })}
           <button
             onClick={() => setWhatsappOpen(true)}
-            className="flex-1 flex flex-col items-center justify-center py-2 gap-1 text-muted-foreground hover:text-[#25D366] transition-colors relative"
+            className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-muted-foreground hover:text-[#25D366] transition-colors relative"
           >
             <MessageCircle className="h-5 w-5" />
             <span className="text-[10px] font-medium">WhatsApp</span>
@@ -117,42 +129,49 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </nav>
       </main>
 
-      {/* ── WhatsApp panel — desktop inline ── */}
-      <aside
-        className={cn(
-          "hidden lg:flex border-l border-border bg-white flex-col shrink-0 relative z-10 shadow-2xl transition-all duration-300 overflow-hidden",
-          whatsappOpen ? "w-[360px] xl:w-[400px]" : "w-0 border-l-0"
-        )}
-      >
-        {whatsappOpen && (
-          <div className="w-[360px] xl:w-[400px] flex flex-col h-full">
-            <WhatsAppSimulator />
-          </div>
-        )}
-      </aside>
-
-      {/* ── WhatsApp sheet — mobile/tablet ── */}
-      <Sheet open={whatsappOpen} onOpenChange={setWhatsappOpen}>
-        <SheetContent
-          side="right"
-          className="p-0 w-full sm:w-[390px] bg-white border-l border-border flex flex-col [&>button]:hidden"
+      {/* ── WhatsApp — desktop inline panel ── */}
+      {isDesktop && (
+        <aside
+          className={cn(
+            "border-l border-border bg-white flex flex-col shrink-0 relative z-10 shadow-2xl transition-all duration-300 overflow-hidden",
+            whatsappOpen ? "w-[360px] xl:w-[400px]" : "w-0 border-l-0"
+          )}
         >
-          <div className="flex items-center justify-between bg-[#128C7E] px-4 py-3 shrink-0">
-            <span className="text-white font-semibold text-sm">WhatsApp Simulator</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20 h-8 w-8"
-              onClick={() => setWhatsappOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <WhatsAppSimulator hideHeader />
-          </div>
-        </SheetContent>
-      </Sheet>
+          {whatsappOpen && (
+            <div className="w-[360px] xl:w-[400px] flex flex-col h-full">
+              <WhatsAppSimulator />
+            </div>
+          )}
+        </aside>
+      )}
+
+      {/* ── WhatsApp — mobile/tablet sheet ── */}
+      {!isDesktop && (
+        <Sheet open={whatsappOpen} onOpenChange={setWhatsappOpen}>
+          <SheetContent
+            side="right"
+            className="p-0 w-full sm:w-[390px] bg-white border-l border-border flex flex-col [&>button]:hidden"
+          >
+            <div className="flex items-center justify-between bg-[#128C7E] px-4 py-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <Car className="h-5 w-5 text-white" />
+                <span className="text-white font-semibold text-sm">RentaCar Bot</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20 h-8 w-8"
+                onClick={() => setWhatsappOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <WhatsAppSimulator hideHeader />
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }
