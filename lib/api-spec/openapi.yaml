@@ -1,22 +1,32 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: RentaCar Operational Management API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: fleet
+    description: Fleet management
+  - name: reservations
+    description: Reservation management
+  - name: sos
+    description: SOS alerts
+  - name: config
+    description: Operational configuration
+  - name: uploads
+    description: File uploads
+  - name: stats
+    description: Dashboard statistics
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +34,778 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /fleet:
+    get:
+      operationId: listFleet
+      tags: [fleet]
+      summary: List all vehicles
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [disponivel, alugado, manutencao, reservado_temporario]
+        - name: categoria
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+    post:
+      operationId: createVehicle
+      tags: [fleet]
+      summary: Add a new vehicle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+
+  /fleet/{id}:
+    get:
+      operationId: getVehicle
+      tags: [fleet]
+      summary: Get a vehicle by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vehicle details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateVehicle
+      tags: [fleet]
+      summary: Update a vehicle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleUpdate"
+      responses:
+        "200":
+          description: Updated vehicle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+    delete:
+      operationId: deleteVehicle
+      tags: [fleet]
+      summary: Delete a vehicle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /fleet/{id}/toggle-status:
+    patch:
+      operationId: toggleVehicleStatus
+      tags: [fleet]
+      summary: Toggle vehicle availability/maintenance status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleStatusToggle"
+      responses:
+        "200":
+          description: Updated vehicle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+
+  /fleet/{id}/damage-history:
+    get:
+      operationId: getVehicleDamageHistory
+      tags: [fleet]
+      summary: Get damage photo history for a vehicle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Damage history entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DamageEntry"
+
+  /reservations:
+    get:
+      operationId: listReservations
+      tags: [reservations]
+      summary: List reservations
+      parameters:
+        - name: status_reserva
+          in: query
+          schema:
+            type: string
+        - name: status_pagamento
+          in: query
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by pickup/return date (YYYY-MM-DD)
+      responses:
+        "200":
+          description: List of reservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reservation"
+    post:
+      operationId: createReservation
+      tags: [reservations]
+      summary: Create a new pre-reservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationInput"
+      responses:
+        "201":
+          description: Created reservation with payment intent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationCreated"
+
+  /reservations/{id}:
+    get:
+      operationId: getReservation
+      tags: [reservations]
+      summary: Get a reservation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reservation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateReservation
+      tags: [reservations]
+      summary: Update reservation status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationUpdate"
+      responses:
+        "200":
+          description: Updated reservation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+
+  /reservations/{id}/simulate-payment:
+    post:
+      operationId: simulatePayment
+      tags: [reservations]
+      summary: Simulate a payment confirmation for demo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment simulated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+
+  /reservations/{id}/upload-docs:
+    post:
+      operationId: uploadDocs
+      tags: [uploads]
+      summary: Upload check-in documents for a reservation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocsUpload"
+      responses:
+        "200":
+          description: Documents uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+
+  /reservations/{id}/upload-car-photos:
+    post:
+      operationId: uploadCarPhotos
+      tags: [uploads]
+      summary: Upload car condition photos for a reservation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CarPhotosUpload"
+      responses:
+        "200":
+          description: Photos uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+
+  /sos:
+    get:
+      operationId: listSosAlerts
+      tags: [sos]
+      summary: List SOS alerts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ativo, resolvido]
+      responses:
+        "200":
+          description: List of SOS alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SosAlert"
+    post:
+      operationId: createSosAlert
+      tags: [sos]
+      summary: Create a new SOS alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SosAlertInput"
+      responses:
+        "201":
+          description: SOS alert created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SosAlert"
+
+  /sos/{id}/resolve:
+    patch:
+      operationId: resolveSosAlert
+      tags: [sos]
+      summary: Mark a SOS alert as resolved
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: SOS alert resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SosAlert"
+
+  /config:
+    get:
+      operationId: getConfig
+      tags: [config]
+      summary: Get operational configuration
+      responses:
+        "200":
+          description: Configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+    patch:
+      operationId: updateConfig
+      tags: [config]
+      summary: Update operational configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigUpdate"
+      responses:
+        "200":
+          description: Updated configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+
+  /stats/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [stats]
+      summary: Get live dashboard statistics
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /stats/fleet-summary:
+    get:
+      operationId: getFleetSummary
+      tags: [stats]
+      summary: Get fleet status breakdown
+      responses:
+        "200":
+          description: Fleet summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetSummary"
+
+  /stats/today-activity:
+    get:
+      operationId: getTodayActivity
+      tags: [stats]
+      summary: Get today's reservations timeline
+      responses:
+        "200":
+          description: Today's activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEntry"
+
+  /stripe/webhook:
+    post:
+      operationId: stripeWebhook
+      tags: [reservations]
+      summary: Stripe webhook endpoint
+      responses:
+        "200":
+          description: Acknowledged
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    Vehicle:
+      type: object
+      required: [id, marca_modelo, categoria, preco_base_dia, valor_caucao, extra_franquia_zero, status]
+      properties:
+        id:
+          type: integer
+        marca_modelo:
+          type: string
+        categoria:
+          type: string
+          enum: [Economico, Familiar, SUV, Premium]
+        foto_url:
+          type: ["string", "null"]
+        preco_base_dia:
+          type: number
+        valor_caucao:
+          type: number
+        extra_franquia_zero:
+          type: number
+        status:
+          type: string
+          enum: [disponivel, alugado, manutencao, reservado_temporario]
+        created_at:
+          type: ["string", "null"]
+
+    VehicleInput:
+      type: object
+      required: [marca_modelo, categoria, preco_base_dia, valor_caucao, extra_franquia_zero]
+      properties:
+        marca_modelo:
+          type: string
+        categoria:
+          type: string
+          enum: [Economico, Familiar, SUV, Premium]
+        foto_url:
+          type: string
+        preco_base_dia:
+          type: number
+        valor_caucao:
+          type: number
+        extra_franquia_zero:
+          type: number
+        status:
+          type: string
+          enum: [disponivel, alugado, manutencao, reservado_temporario]
+
+    VehicleUpdate:
+      type: object
+      properties:
+        marca_modelo:
+          type: string
+        categoria:
+          type: string
+          enum: [Economico, Familiar, SUV, Premium]
+        foto_url:
+          type: string
+        preco_base_dia:
+          type: number
+        valor_caucao:
+          type: number
+        extra_franquia_zero:
+          type: number
+        status:
+          type: string
+          enum: [disponivel, alugado, manutencao, reservado_temporario]
+
+    VehicleStatusToggle:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [disponivel, manutencao]
+
+    DamageEntry:
+      type: object
+      required: [reservation_id, cliente_nome, fotos, created_at]
+      properties:
+        reservation_id:
+          type: integer
+        cliente_nome:
+          type: string
+        fotos:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+
+    Reservation:
+      type: object
+      required: [id, cliente_telefone, cliente_nome, veiculo_id, tipo_protecao, data_levantamento, data_devolucao, valor_total, status_pagamento, status_reserva]
+      properties:
+        id:
+          type: integer
+        cliente_telefone:
+          type: string
+        cliente_nome:
+          type: string
+        cliente_idioma:
+          type: ["string", "null"]
+        veiculo_id:
+          type: integer
+        tipo_protecao:
+          type: string
+          enum: [standard_com_caucao, franquia_zero]
+        data_levantamento:
+          type: string
+        data_devolucao:
+          type: string
+        hora_chegada_voo:
+          type: ["string", "null"]
+        taxa_noturna_aplicada:
+          type: ["number", "null"]
+        valor_total:
+          type: number
+        status_pagamento:
+          type: string
+          enum: [pendente, pago_sinal, falhado]
+        status_reserva:
+          type: string
+          enum: [criada, checkin_feito, carro_na_estrada, concluida]
+        docs_checkin_url:
+          type: ["object", "null"]
+        fotos_estado_carro:
+          type: ["object", "null"]
+        stripe_intent_id:
+          type: ["string", "null"]
+        created_at:
+          type: ["string", "null"]
+        vehicle:
+          $ref: "#/components/schemas/Vehicle"
+
+    ReservationInput:
+      type: object
+      required: [cliente_telefone, cliente_nome, veiculo_id, tipo_protecao, data_levantamento, data_devolucao]
+      properties:
+        cliente_telefone:
+          type: string
+        cliente_nome:
+          type: string
+        cliente_idioma:
+          type: string
+        veiculo_id:
+          type: integer
+        tipo_protecao:
+          type: string
+          enum: [standard_com_caucao, franquia_zero]
+        data_levantamento:
+          type: string
+        data_devolucao:
+          type: string
+        hora_chegada_voo:
+          type: string
+
+    ReservationCreated:
+      type: object
+      required: [reservation, payment_url]
+      properties:
+        reservation:
+          $ref: "#/components/schemas/Reservation"
+        payment_url:
+          type: string
+
+    ReservationUpdate:
+      type: object
+      properties:
+        status_reserva:
+          type: string
+          enum: [criada, checkin_feito, carro_na_estrada, concluida]
+        status_pagamento:
+          type: string
+          enum: [pendente, pago_sinal, falhado]
+        hora_chegada_voo:
+          type: string
+
+    DocsUpload:
+      type: object
+      required: [docs]
+      properties:
+        docs:
+          type: object
+          description: JSON object with document URLs (passaporte, carta_conducao)
+
+    CarPhotosUpload:
+      type: object
+      required: [fotos]
+      properties:
+        fotos:
+          type: object
+          description: JSON object with car photo URLs (frente, traseira, esquerda, direita)
+
+    SosAlert:
+      type: object
+      required: [id, reserva_id, status, created_at]
+      properties:
+        id:
+          type: integer
+        reserva_id:
+          type: integer
+        localizacao_latitude:
+          type: ["number", "null"]
+        localizacao_longitude:
+          type: ["number", "null"]
+        foto_problema_url:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [ativo, resolvido]
+        created_at:
+          type: string
+        reservation:
+          $ref: "#/components/schemas/Reservation"
+
+    SosAlertInput:
+      type: object
+      required: [reserva_id]
+      properties:
+        reserva_id:
+          type: integer
+        localizacao_latitude:
+          type: number
+        localizacao_longitude:
+          type: number
+        foto_problema_url:
+          type: string
+
+    Config:
+      type: object
+      required: [id, horario_abertura, horario_fecho, taxa_noturna, idade_minima, taxa_condutor_jovem]
+      properties:
+        id:
+          type: integer
+        horario_abertura:
+          type: string
+        horario_fecho:
+          type: string
+        taxa_noturna:
+          type: number
+        idade_minima:
+          type: integer
+        taxa_condutor_jovem:
+          type: number
+        stripe_secret_key:
+          type: ["string", "null"]
+        stripe_webhook_secret:
+          type: ["string", "null"]
+
+    ConfigUpdate:
+      type: object
+      properties:
+        horario_abertura:
+          type: string
+        horario_fecho:
+          type: string
+        taxa_noturna:
+          type: number
+        idade_minima:
+          type: integer
+        taxa_condutor_jovem:
+          type: number
+        stripe_secret_key:
+          type: string
+        stripe_webhook_secret:
+          type: string
+
+    DashboardStats:
+      type: object
+      required: [total_reservations_today, pending_payment, checkin_done, cars_on_road, active_sos, revenue_today, occupancy_rate]
+      properties:
+        total_reservations_today:
+          type: integer
+        pending_payment:
+          type: integer
+        checkin_done:
+          type: integer
+        cars_on_road:
+          type: integer
+        active_sos:
+          type: integer
+        revenue_today:
+          type: number
+        occupancy_rate:
+          type: number
+        overdue_returns:
+          type: integer
+
+    FleetSummary:
+      type: object
+      required: [disponivel, alugado, manutencao, reservado_temporario, total]
+      properties:
+        disponivel:
+          type: integer
+        alugado:
+          type: integer
+        manutencao:
+          type: integer
+        reservado_temporario:
+          type: integer
+        total:
+          type: integer
+
+    ActivityEntry:
+      type: object
+      required: [id, cliente_nome, tipo, hora, status_reserva, status_pagamento, veiculo]
+      properties:
+        id:
+          type: integer
+        cliente_nome:
+          type: string
+        tipo:
+          type: string
+          enum: [levantamento, devolucao]
+        hora:
+          type: string
+        status_reserva:
+          type: string
+        status_pagamento:
+          type: string
+        veiculo:
+          type: string
+        overdue:
+          type: boolean

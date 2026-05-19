@@ -1,0 +1,80 @@
+Atua como um Engenheiro de Software Fullstack Sénior e Especialista em Arquitetura de SaaS. Cria um ecossistema completo de Gestão Operacional e Automação para uma agência de Rent-a-Car local. 
+
+O sistema deve ser desenvolvido em Split Screen (Ecrã Dividido) ou com duas rotas bem definidas no navegador:
+1. O DASHBOARD DA EMPRESA: Onde o staff controla o negócio, a frota, os pagamentos e as crises.
+2. O SIMULADOR DE WHATSAPP (Lado Direito): Uma interface que imita perfeitamente um smartphone a correr o WhatsApp, onde o cliente final conversa com uma inteligência artificial humanizada, transparente e altamente focada em conversão.
+
+Desenvolve o projeto seguindo rigorosamente todas as especificações abaixo:
+
+---
+
+### 1. MODELO DE DADOS COMPLETO (Base de Dados Relacional)
+Estrutura o banco de dados com as seguintes tabelas e regras:
+- 'config_operacao': id (PK), horario_abertura (TIME, default 08:00), horario_fecho (TIME, default 22:00), taxa_noturna (DECIMAL, default 30.00), idade_minima (INT, default 21), taxa_condutor_jovem (DECIMAL, default 15.00), stripe_secret_key, stripe_webhook_secret.
+- 'frota': id (PK), marca_modelo, categoria (Economico, Familiar, SUV, Premium), foto_url, preco_base_dia, valor_caucao, extra_franquia_zero, status (disponivel, alugado, manutencao, reservado_temporario).
+- 'reservas': id (PK), cliente_telefone, cliente_nome, cliente_idioma, veiculo_id (FK), tipo_protecao (standard_com_caucao, franquia_zero), data_levantamento, data_devolucao, hora_chegada_voo, taxa_noturna_aplicada (DECIMAL), valor_total (DECIMAL), status_pagamento (pendente, pago_sinal, falhado), status_reserva (criada, checkin_feito, carro_na_estrada, concluida), docs_checkin_url (JSONB para fotos de documentos), fotos_estado_carro (JSONB para fotos dos 4 lados do veículo), stripe_intent_id.
+- 'alertas_sos': id (PK), reserva_id (FK), localizacao_latitude, localizacao_longitude, foto_problema_url, status (ativo, resolvido), created_at.
+
+---
+
+### 2. BACKEND E REGRAS DE NEGÓCIO CRÍTICAS
+Programa os seguintes comportamentos lógicos no servidor:
+- Bloqueio de Stock Dinâmico: Quando o cliente escolhe um carro no WhatsApp, o status do veículo passa a 'reservado_temporario' por 15 minutos. Se o Webhook do Stripe não confirmar o pagamento nesse tempo, o carro volta a 'disponivel'. Se outro cliente tentar escolher o mesmo carro, o bot avisa que está temporariamente bloqueado.
+- Cálculo de Taxas Automático: Se a hora do voo do cliente estiver fora do horário de abertura/fecho da agência, o backend soma automaticamente a taxa_noturna ao valor total do aluguer.
+- Webhook Seguro do Stripe: A confirmação da reserva e a mudança de status para 'pago_sinal' devem depender exclusivamente do aviso direto do Stripe (server-to-server) e nunca da ação do navegador do cliente.
+
+---
+
+### 3. INTERFACE DO SIMULADOR DE WHATSAPP (Fluxo de Conversação Humana)
+O chat deve ter um comportamento fluido (com delay de digitação simulado) e seguir esta árvore exata de diálogo com botões interativos:
+
+A. SAUDAÇÃO E ENTRADA:
+- Bot: "Olá! Bem-vindo à nossa rent-a-car. 🚗 Já aterrou ou está a planear as suas férias? Diga-me só o seu nome para começarmos!"
+- [Entrada de Texto para o Nome]
+
+B. TRIAGEM EMPÁTICA (Pessoas e Malas):
+- Bot: "Perfeito, [Nome]! Vamos encontrar o veículo ideal. Para garantir o máximo conforto na estrada: quantas pessoas viajam consigo e, mais importante, trazem muitas malas de porão?"
+- [Botões: "Apenas eu (0-1 mala)" | "Casal (2 malas)" | "Família / Grupo (3+ malas)"]
+- Se o utilizador clicar em Família: Bot: "Excelente, para viagens em família o espaço é sagrado. Ninguém merece ir com malas nos joelhos! Deixe-me ver o que tenho na frota com uma excelente bagageira..." [Exibe as fotos dos carros recomendados da categoria SUV/Familiar com os preços].
+
+C. A BATALHA DA TRANSPARÊNCIA (Franquia Zero vs Caução):
+Assim que o cliente escolhe o carro, o bot apresenta os dois níveis de proteção de forma clara:
+- Bot: "Como deseja proteger a sua viagem, [Nome]? Temos duas opções:
+🛡️ Opção 1: Franquia ZERO. Seguro contra todos os riscos (pneus, vidros e riscos incluídos). Caução ao balcão: €0. Não bloqueamos um único cêntimo do seu dinheiro.
+📄 Opção 2: Tarifa Standard. Seguro básico. Requer obrigatoriamente o bloqueio de €1.200 num Cartão de CRÉDITO físico no momento da entrega.
+O que prefere?"
+- [Botões: "Escolher Franquia ZERO" | "Escolher Tarifa Standard"]
+- Se o cliente escolher Tarifa Standard: Bot: "Aviso crucial antes de pagar o sinal: a agência exige obrigatoriamente um Cartão de CRÉDITO físico em nome do condutor principal para reter os €1.200. Cartões de débito ou Revolut NÃO serão aceites para a caução. Confirma que tem este cartão?" [Botões: "Sim, tenho Crédito" / "Mudar para Franquia ZERO"].
+
+D. PAGAMENTO E PRÉ-CHECK-IN:
+- Após a escolha, o bot gera o link simulado do Stripe: "Tudo pronto! Clique abaixo para pagar o sinal de reserva de €50 e trancar o seu carro." [Botão de Link].
+- Após o pagamento simulado: Bot: "Pagamento confirmado! 🎉 Para saltar as filas de 30 minutos no balcão do aeroporto, envie-me por aqui uma foto nítida da sua Carta de Condução e Passaporte. Eu preparo o contrato já!" [Botões para simular upload de documentos].
+
+E. CONTROLO DE DANOS (Levantamento):
+- Quando o cliente simula que chegou ao carro: Bot: "Olá [Nome], o seu carro está à sua espera na vaga X! Para sua total segurança jurídica, tire 4 fotos rápidas aos 4 lados do veículo antes de arrancar e envie-me por aqui. Elas ficam gravadas no sistema para evitar qualquer discussão sobre riscos antigos!" [Botões para simular envio de fotos do estado do carro].
+
+F. MENUS PERMANENTES DE AJUDA E CRISE:
+Cria botões de atalho no telemóvel para testar as seguintes situações a qualquer momento:
+- Botão [Meu Voo Atrasou]: O bot recolhe o número do voo, valida a hora contra o horário da loja, aplica a taxa noturna se necessário e avisa o Dashboard.
+- Botão [Adicionar 2º Condutor]: O bot cobra €20 pelo seguro extra e pede a foto da carta do amigo.
+- Botão [SOS - CENTRAL DE PÂNICO]: O cliente simula um furo ou avaria. O bot diz: "Calma, estamos aqui para ajudar. Envie-me a sua localização GPS e uma foto do painel/pneu." [Botão: Enviar GPS de Teste + Foto da Avaria].
+
+---
+
+### 4. INTERFACE DO DASHBOARD DA EMPRESA (Gestão Operacional)
+Desenha três ecrãs principais ligados ao backend via WebSockets (Socket.io) para atualizações em tempo real sem refresh:
+
+- ECRÃ 1: LIVE FEED (Centro de Controlo do Balcão):
+  - Lado Esquerdo (70%): Lista dinâmica de reservas ativas divididas por colunas ou estados visuais claros: [Sinal Pendente], [Pré-Check-In Feito - Docs Prontos], [Carro na Estrada], [Devolução em Atraso]. Ao clicar em qualquer cliente, abre um modal exibindo os dados dele e as fotos dos documentos enviados pelo WhatsApp para validação em 5 segundos.
+  - Lado Direito (30% - ZONA CRÍTICA SOS): Fundo destacado de alta prioridade. Se o utilizador disparar o botão [SOS] no telemóvel simulado, esta zona deve PISCAR A VERMELHO forte, emitir um alerta sonoro de emergência, exibir a marca do carro, a foto do pneu furado ou avaria enviada pelo cliente e um botão gigante azul: [Abrir Localização no Google Maps] com as coordenadas reais guardadas na tabela.
+  - Alerta de Atraso Operacional: Se a hora atual ultrapassar em mais de 1 hora o prazo de devolução de uma reserva sem que o staff a tenha fechado, o cartão do cliente passa a piscar a amarelo forte com o aviso "Cliente em Atraso - Telefonar".
+
+- ECRÃ 2: GESTÃO DE FROTA (CRUD):
+  - Exibe um catálogo visual de todos os carros da base de dados. Permite cadastrar novos veículos (com compressão automática de imagem para formato .webp leve).
+  - Cada carro tem um botão Switch Toggle [Disponível / Oficina]. Se for desligado, o status muda para 'manutencao' e o bot de WhatsApp deixa instantaneamente de sugerir esse veículo nas simulações.
+  - Aba "Historial de Danos": Dentro de cada carro, permite ver cronologicamente todas as fotos de riscos enviadas pelos clientes passados daquele veículo específico, servindo como prova irrefutável de proteção do negócio.
+
+- ECRÃ 3: CONFIGURAÇÕES OPERACIONAIS:
+  - Painel administrativo com formulários para o dono editar o horário de funcionamento, a taxa noturna, a idade mínima e guardar as suas chaves de API do Stripe.
+
+Garante que todo este ecossistema está interligado, responsivo e totalmente funcional para uma demonstração comercial interativa de alto impacto.

@@ -1,0 +1,26 @@
+Atua como um Engenheiro de Software Fullstack Sénior. Preciso que cries um Dashboard de Gestão Operacional para empresas de Rent-a-Car. Este Dashboard será o "cérebro" de uma infraestrutura onde o cliente final interage 100% via WhatsApp e os pagamentos são feitos via Stripe, enquanto a empresa gere tudo por este painel web.
+
+Cria a aplicação seguindo rigorosamente as seguintes instruções:
+
+1. CONFIGURAÇÃO DO BANCO DE DADOS (PostgreSQL ou SQLite no Replit):
+Cria uma estrutura de dados relacional com 4 tabelas principais:
+- 'config_operacao': Guarda o horário de abertura/fecho da agência, valor da taxa de entrega noturna (out of hours), idade mínima permitida e os campos para as chaves de API do Stripe (secret key e webhook secret).
+- 'frota': Guarda a marca/modelo do carro, categoria (Económico, Familiar, SUV, Premium), URL da foto, preço base por dia, valor da caução standard, valor extra para ativação de Franquia Zero e o status atual (disponivel, alugado, manutencao).
+- 'reservas': Guarda o telefone do cliente, idioma detetado, ID do veículo, tipo de proteção escolhida (standard_com_caucao ou franquia_zero), datas de levantamento/devolução, hora do voo, taxas aplicadas, valor total, status do pagamento (pendente, pago_sinal, falhado) e status da reserva (criada, checkin_feito, carro_na_estrada, concluida). Deve conter também um campo JSON para armazenar os URLs das fotos dos documentos e as 4 fotos do estado do carro enviadas pelo cliente.
+- 'alertas_sos': Guarda o ID da reserva associada, coordenadas de latitude/longitude da emergência, URL da foto do problema enviada pelo cliente e o status do alerta (ativo, resolvido).
+
+2. DESENVOLVIMENTO DO BACKEND (Node.js/Express ou Python/FastAPI):
+Cria os seguintes endpoints e lógicas de negócio:
+- Rotas para gerir a frota (CRUD completo) para o Dashboard e uma rota de leitura rápida para o Bot de WhatsApp consultar stock disponível.
+- Rota para criação de pré-reserva que calcula automaticamente o valor total (Dias x Preço Base). Se a hora do voo do cliente for fora do horário de funcionamento configurado na tabela 'config_operacao', soma automaticamente a taxa noturna ao valor final.
+- Integração com a API do Stripe para gerar um Payment Intent com o valor do sinal da reserva e devolver o link seguro de pagamento.
+- Endpoint de Webhook para o Stripe: Ao receber o evento 'payment_intent.succeeded', deve atualizar o status do pagamento para 'pago_sinal' e disparar um evento via WebSockets (Socket.io) para atualizar o frontend instantaneamente.
+- Rota para receber uploads de ficheiros multimédia (fotos de passaporte, carta de condução e fotos dos riscos do carro) e associar os links à reserva correspondente.
+
+3. DESENVOLVIMENTO DO FRONTEND UI (React/Next.js ou HTML/Tailwind simples no Replit):
+Cria uma interface limpa, moderna e responsiva dividida em 3 ecrãs principais:
+- Ecrã 1 (Live Feed / Centro de Controlo): Deve usar WebSockets para se atualizar em tempo real sem refresh. Divide a página em duas áreas. O lado esquerdo mostra a listagem de reservas do dia ordenadas por hora, exibindo o status de cada cliente (Ex: Sinal Pendente, Documentos Enviados, Carro na Estrada). Ao clicar numa reserva, abre os detalhes e exibe as fotos dos documentos para validação rápida. O lado direito é a Zona Crítica de SOS: Se um alerta for inserido na tabela 'alertas_sos', esta área deve piscar a vermelho com um aviso sonoro, exibindo os dados do carro, a foto da avaria/furo e um botão que abre a localização GPS direta no Google Maps.
+- Ecrã 2 (Gestão de Frota): Uma grelha (Grid) visual com os cartões de todos os carros. Permite adicionar novos veículos e inclui um interruptor (Toggle Switch) "Disponível / Oficina" ao lado de cada carro. Se o interruptor for desligado, o status muda na base de dados para 'manutencao'.
+- Ecrã 3 (Configurações): Um formulário simples para o dono definir os horários da loja, valores das taxas operacionais e inserir as credenciais do Stripe dele.
+
+Garante que o código está totalmente modularizado, com tratamento de erros adequado para falhas de pagamento e uploads corrompidos. Cria um ambiente funcional onde eu possa testar a criação de um carro no painel e simular uma reserva a entrar.
