@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "egWbdQKAnvbZU_DlNkKGL"
+uri = "file://rentacar-dashboard.tar.gz"
+type = "unspecified"
+title = "RentaCar Dashboard — Código Completo"
