@@ -2,8 +2,15 @@ node_modules
 .git
 .env
 .env.local
+**/.env
 **/dist
 .cursor
 agent-transcripts
 *.md
 !README.md
+artifacts/mockup-sandbox
+attached_assets
+.pnpm-store
+coverage
+.turbo
+terminals

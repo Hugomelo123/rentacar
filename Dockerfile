@@ -1,14 +1,17 @@
-# Deploy único: API + painel no mesmo serviço (escolhe só o repositório no Railway)
-FROM node:20-alpine AS build
-RUN corepack enable
+# Deploy único: API + painel (Linux — Railway)
+FROM node:20-bookworm-slim AS build
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /app
+
 COPY . .
-RUN pnpm install --frozen-lockfile
-ENV BASE_PATH=/ PORT=8080
+RUN pnpm install --no-frozen-lockfile
+
+ENV BASE_PATH=/ PORT=8080 NODE_ENV=production
 RUN pnpm --filter @workspace/rentacar-dashboard run build
 RUN pnpm --filter @workspace/api-server run build
 
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV SERVE_DASHBOARD=true

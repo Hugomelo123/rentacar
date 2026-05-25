@@ -27,9 +27,14 @@ No [Railway Dashboard](https://railway.app):
    - **Builder:** **Dockerfile** (não Nixpacks / Railpack por pacote).
    - **Dockerfile path:** `Dockerfile`
 4. **+ New** → **Database** → **PostgreSQL**.
-5. No serviço da app → **Variables** → **Add Reference**:
+5. No serviço da app → **Variables** (obrigatório, senão o deploy falha ou a app não arranca):
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
-6. **Deploy** / **Redeploy**.
+   - `NODE_ENV` = `production`
+   - (`PORT` é definido automaticamente pelo Railway)
+6. **Settings** → confirme **Builder: Dockerfile**
+7. **Deploy** / **Redeploy**.
+
+Se o build falhar com `pnpm lockfile` ou `vite not found`, faça pull do `main` mais recente (Dockerfile corrigido).
 
 Deve ficar **só 2 cartões**: `rentacar` (app) + `Postgres`.
 
