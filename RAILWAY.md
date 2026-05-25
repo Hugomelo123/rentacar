@@ -1,100 +1,52 @@
-# Deploy no Railway
+# Deploy no Railway (só escolher o repositório)
 
-## Porque aparecem 7 serviços e vários falham?
+## Forma simples (recomendada)
 
-O Railway detetou o repositório como **monorepo** (pnpm workspaces) e criou **um serviço por cada `package.json`**.
+1. [Railway](https://railway.app) → **New Project** → **Deploy from GitHub repo** → `Hugomelo123/rentacar`
+2. Se aparecerem **vários serviços** (monorepo): apague todos e crie **um** serviço ligado ao mesmo repo, ou crie projeto novo e escolha **Deploy with Dockerfile** (deteta o `Dockerfile` na raiz).
+3. No projeto, **+ New** → **Database** → **PostgreSQL**
+4. No serviço da app → **Variables** → **Add reference** → `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
+5. **Deploy** / **Redeploy**
 
-| Serviço no Railway | O que é | Deve fazer deploy? |
-|--------------------|---------|-------------------|
-| `@workspace/api-server` | API Express | **Sim** |
-| `@workspace/rentacar-dashboard` | Painel + WhatsApp | **Sim** |
-| `@workspace/db` | Biblioteca Drizzle (schema) | **Não** |
-| `@workspace/api-zod` | Biblioteca Zod | **Não** |
-| `@workspace/api-client-react` | Cliente React gerado | **Não** |
-| `@workspace/api-spec` | OpenAPI + codegen | **Não** |
-| `@workspace/mockup-sandbox` | Sandbox UI (dev) | **Não** |
-
-Os pacotes em `lib/` **não têm servidor** (`start`). O Railway tenta fazer build na mesma → **Build failed**.
-
----
-
-## Configuração correta (2 serviços + Postgres)
-
-### 1. Apagar serviços a mais
-
-No projeto Railway, **apague** (ou desligue) estes serviços:
-
-- `@workspace/db`
-- `@workspace/api-zod`
-- `@workspace/api-client-react`
-- `@workspace/api-spec`
-- `@workspace/mockup-sandbox`
-
-Opcional: em **Settings → General**, desative **Automatic Monorepo Detection** para não voltarem a aparecer.
-
-### 2. Serviço API
-
-| Campo | Valor |
-|-------|--------|
-| **Root Directory** | `artifacts/api-server` |
-| **Build** | (usa `railway.toml` no repo) ou manual: `cd ../.. && pnpm install && pnpm --filter @workspace/api-server run build` |
-| **Start** | `node dist/index.mjs` |
-
-**Variáveis de ambiente:**
+Um único URL serve **painel + API** (`/api/...`). Não precisa de escolher pastas nem dois serviços.
 
 | Variável | Valor |
 |----------|--------|
-| `DATABASE_URL` | URL do PostgreSQL Railway (plugin Postgres) |
-| `PORT` | (Railway define automaticamente) |
+| `DATABASE_URL` | Referência ao Postgres (obrigatório) |
+| `PORT` | Automático |
+| `SERVE_DASHBOARD` | `true` (default) |
 | `NODE_ENV` | `production` |
 
-Depois do primeiro deploy, corra o schema na base (local ou one-off):
-
-```bash
-pnpm db:push
-pnpm db:seed
-```
-
-(ou ligue um job one-off no Railway com a mesma `DATABASE_URL`.)
-
-### 3. Serviço Dashboard (frontend)
-
-| Campo | Valor |
-|-------|--------|
-| **Root Directory** | `artifacts/rentacar-dashboard` |
-| **Build** | `cd ../.. && pnpm install && pnpm --filter @workspace/rentacar-dashboard run build` |
-| **Start** | `pnpm run serve` |
-
-**Variáveis:**
-
-| Variável | Valor |
-|----------|--------|
-| `BASE_PATH` | `/` |
-| `PORT` | (automático) |
-
-Para o painel falar com a API em produção, configure no frontend a URL da API (domínio público do serviço `api-server`), por exemplo via variável que o cliente React use (`setBaseUrl`).
-
-### 4. PostgreSQL
-
-Adicione o plugin **PostgreSQL** ao projeto e ligue a variável `DATABASE_URL` ao serviço **api-server**.
+O `releaseCommand` aplica o schema SQL na primeira deploy com Postgres ligado.
 
 ---
 
-## Ficheiros no repositório
+## Porque às vezes aparecem 7 serviços?
 
-- `artifacts/api-server/railway.toml`
-- `artifacts/rentacar-dashboard/railway.toml`
+O Railway importou o repo como **monorepo JavaScript** e criou um serviço por cada `package.json` (`lib/db`, `api-zod`, etc.). Esses pacotes **não são apps** → Build failed.
 
-Faça push para `main` e volte a fazer deploy **só** nos dois serviços acima.
+**Solução:** um serviço só, com `Dockerfile` + `railway.toml` na **raiz** do repo (já incluídos).
+
+Apague: `@workspace/db`, `api-zod`, `api-client`, `api-spec`, `mockup-sandbox`, e serviços duplicados de API/dashboard se existirem.
 
 ---
 
-## Resumo
+## Arranque local (igual)
+
+```powershell
+.\start-local.ps1
+```
+
+Ver [LOCALHOST.md](./LOCALHOST.md).
+
+---
+
+## Estrutura de deploy
 
 ```
-GitHub repo (monorepo)
-├── lib/*              → bibliotecas (NÃO deploy)
-├── artifacts/api-server      → 1.º serviço Railway ✅
-└── artifacts/rentacar-dashboard → 2.º serviço Railway ✅
-+ PostgreSQL plugin
+rentacar (1 serviço Railway)
+├── Dockerfile          → build API + dashboard
+├── railway.toml        → healthcheck + release schema
+├── PostgreSQL plugin   → DATABASE_URL
+└── URL público         → painel em /  e API em /api
 ```

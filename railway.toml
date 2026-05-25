@@ -1,0 +1,10 @@
+# Um único serviço: API + dashboard (raiz do repositório)
+# No Railway: ligue o repo, adicione PostgreSQL, variável DATABASE_URL → pronto.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/healthz"
+restartPolicyType = "ON_FAILURE"

@@ -147,12 +147,9 @@ A lógica de conversa está em `artifacts/rentacar-dashboard/src/lib/` (`chat-i1
 
 ## Deploy (Railway)
 
-O Railway pode criar **vários serviços** automaticamente (um por pacote do monorepo). Só precisa de **2**:
+Ligue o repositório, adicione **PostgreSQL** e referencie `DATABASE_URL`. Um único serviço (Dockerfile na raiz) publica **painel + API** no mesmo URL.
 
-- `artifacts/api-server` (API)
-- `artifacts/rentacar-dashboard` (frontend)
-
-Apague os serviços `@workspace/db`, `api-zod`, `api-client`, `api-spec` e `mockup-sandbox`. Guia completo: **[RAILWAY.md](./RAILWAY.md)**
+Se o Railway criar vários serviços por engano, apague os extras e deixe só um. Guia: **[RAILWAY.md](./RAILWAY.md)**
 
 ---
 
