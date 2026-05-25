@@ -147,9 +147,7 @@ A lógica de conversa está em `artifacts/rentacar-dashboard/src/lib/` (`chat-i1
 
 ## Deploy (Railway)
 
-Ligue o repositório, adicione **PostgreSQL** e referencie `DATABASE_URL`. Um único serviço (Dockerfile na raiz) publica **painel + API** no mesmo URL.
-
-Se o Railway criar vários serviços por engano, apague os extras e deixe só um. Guia: **[RAILWAY.md](./RAILWAY.md)**
+**Importante:** não use o import automático de monorepo (cria 7 serviços). Siga **[RAILWAY.md](./RAILWAY.md)**: projeto vazio → 1 repo → **Dockerfile** na raiz → PostgreSQL → `DATABASE_URL`.
 
 ---
 

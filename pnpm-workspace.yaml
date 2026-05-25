@@ -34,8 +34,10 @@ minimumReleaseAgeExclude:
   - '@replit/*'
   - stripe-replit-sync
 
+# Só pacotes necessários ao build (evita o Railway criar serviço para mockup-sandbox)
 packages:
-  - artifacts/*
+  - artifacts/api-server
+  - artifacts/rentacar-dashboard
   - lib/*
   - lib/integrations/*
   - scripts

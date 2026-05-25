@@ -1,52 +1,72 @@
-# Deploy no Railway (só escolher o repositório)
+# Deploy no Railway (1 serviço só)
 
-## Forma simples (recomendada)
+## Porque abrem vários serviços?
 
-1. [Railway](https://railway.app) → **New Project** → **Deploy from GitHub repo** → `Hugomelo123/rentacar`
-2. Se aparecerem **vários serviços** (monorepo): apague todos e crie **um** serviço ligado ao mesmo repo, ou crie projeto novo e escolha **Deploy with Dockerfile** (deteta o `Dockerfile` na raiz).
-3. No projeto, **+ New** → **Database** → **PostgreSQL**
-4. No serviço da app → **Variables** → **Add reference** → `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
-5. **Deploy** / **Redeploy**
+Ao ligar o GitHub, o Railway usa **“Import monorepo”** e cria um serviço por cada pacote (`@workspace/db`, `api-zod`, etc.).  
+Esses pacotes em `lib/` são **bibliotecas**, não aplicações → **Build failed**.
 
-Um único URL serve **painel + API** (`/api/...`). Não precisa de escolher pastas nem dois serviços.
+**Não use** o fluxo que diz “detectámos um monorepo” com 7 serviços.
 
-| Variável | Valor |
+---
+
+## Forma certa (fazer uma vez)
+
+### 1. Limpar o projeto atual
+
+No [Railway Dashboard](https://railway.app):
+
+1. Apague **todos** os serviços `@workspace/...` (os 6 ou 7 cartões).
+2. Ou crie um **projeto novo** (recomendado se estiver confuso).
+
+### 2. Um único serviço com Dockerfile
+
+1. **New Project** → **Empty Project** (projeto vazio).
+2. **+ New** → **GitHub Repo** → `Hugomelo123/rentacar`.
+3. Abra o **único** serviço criado → **Settings**:
+   - **Root Directory:** deixe **vazio** `/` (raiz do repo).
+   - **Builder:** **Dockerfile** (não Nixpacks / Railpack por pacote).
+   - **Dockerfile path:** `Dockerfile`
+4. **+ New** → **Database** → **PostgreSQL**.
+5. No serviço da app → **Variables** → **Add Reference**:
+   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
+6. **Deploy** / **Redeploy**.
+
+Deve ficar **só 2 cartões**: `rentacar` (app) + `Postgres`.
+
+### 3. Domínio
+
+No serviço da app → **Settings** → **Networking** → **Generate Domain**.
+
+Abre o URL: vê o **painel**; a API está em `/api/healthz`.
+
+---
+
+## O que o repositório já tem
+
+| Ficheiro | Função |
 |----------|--------|
-| `DATABASE_URL` | Referência ao Postgres (obrigatório) |
-| `PORT` | Automático |
-| `SERVE_DASHBOARD` | `true` (default) |
-| `NODE_ENV` | `production` |
+| `Dockerfile` | Build API + dashboard numa imagem |
+| `railway.toml` / `railway.json` | Força builder Dockerfile na raiz |
+| `package.json` (raiz) | `start` + `build` para um único app |
 
-O `releaseCommand` aplica o schema SQL na primeira deploy com Postgres ligado.
+**Removido:** `railway.toml` dentro de `artifacts/*` (isso fazia o Railway criar serviços extra).
 
----
-
-## Porque às vezes aparecem 7 serviços?
-
-O Railway importou o repo como **monorepo JavaScript** e criou um serviço por cada `package.json` (`lib/db`, `api-zod`, etc.). Esses pacotes **não são apps** → Build failed.
-
-**Solução:** um serviço só, com `Dockerfile` + `railway.toml` na **raiz** do repo (já incluídos).
-
-Apague: `@workspace/db`, `api-zod`, `api-client`, `api-spec`, `mockup-sandbox`, e serviços duplicados de API/dashboard se existirem.
+**Workspace:** `mockup-sandbox` já não entra no `pnpm-workspace` (menos um serviço fantasma).
 
 ---
 
-## Arranque local (igual)
+## Se voltarem a aparecer vários serviços
+
+- Não clique em **“Deploy all packages”** / import monorepo.
+- Confirme **Builder = Dockerfile** e **Root = /**.
+- Apague de novo os serviços `@workspace/*`.
+
+---
+
+## Local
 
 ```powershell
 .\start-local.ps1
 ```
 
 Ver [LOCALHOST.md](./LOCALHOST.md).
-
----
-
-## Estrutura de deploy
-
-```
-rentacar (1 serviço Railway)
-├── Dockerfile          → build API + dashboard
-├── railway.toml        → healthcheck + release schema
-├── PostgreSQL plugin   → DATABASE_URL
-└── URL público         → painel em /  e API em /api
-```

@@ -1,10 +1,15 @@
 {
-  "name": "workspace",
-  "version": "0.0.0",
+  "name": "rentacar",
+  "version": "1.0.0",
+  "description": "Autocunha Rent-a-Car — API + painel (deploy único Railway)",
   "license": "MIT",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
+    "start": "node artifacts/api-server/dist/index.mjs",
+    "build": "pnpm run build:railway",
     "preinstall": "node -e \"const ok=(process.env.npm_config_user_agent||'').includes('pnpm')||(process.env.npm_execpath||'').includes('pnpm');if(!ok){console.error('Use pnpm instead');process.exit(1)}\"",
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "build:all": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "db:up": "docker compose up -d",
@@ -17,7 +22,6 @@
     "build:railway": "pnpm install && pnpm --filter @workspace/rentacar-dashboard run build && pnpm --filter @workspace/api-server run build",
     "start:railway": "node artifacts/api-server/dist/index.mjs"
   },
-  "private": true,
   "devDependencies": {
     "@rollup/rollup-win32-x64-msvc": "4.60.3",
     "@tailwindcss/oxide-win32-x64-msvc": "^4.3.0",
