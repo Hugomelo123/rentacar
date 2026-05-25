@@ -16,4 +16,5 @@ export interface ActivityEntry {
   status_pagamento: string;
   veiculo: string;
   overdue?: boolean;
+  cliente_idioma?: string | null;
 }

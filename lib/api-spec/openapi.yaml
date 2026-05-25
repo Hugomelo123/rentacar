@@ -772,6 +772,12 @@ components:
           type: number
         overdue_returns:
           type: integer
+        counter_time_saved_minutes:
+          type: integer
+          description: Estimated counter time saved by AI pre-check-in (demo KPI)
+        pre_checkin_completion_rate:
+          type: number
+          description: Percentage of reservations with AI document verification (demo KPI)
 
     FleetSummary:
       type: object
@@ -809,3 +815,6 @@ components:
           type: string
         overdue:
           type: boolean
+        cliente_idioma:
+          type: ["string", "null"]
+          description: Client language detected by AI (PT, EN, FR, ES, DE)

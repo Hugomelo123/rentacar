@@ -15,4 +15,6 @@ export interface DashboardStats {
   revenue_today: number;
   occupancy_rate: number;
   overdue_returns?: number;
+  counter_time_saved_minutes?: number;
+  pre_checkin_completion_rate?: number;
 }

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: premium-strong-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: autocunha
+      POSTGRES_PASSWORD: autocunha
+      POSTGRES_DB: rentacar
+    volumes:
+      - premium_strong_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autocunha -d rentacar"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  premium_strong_pgdata:

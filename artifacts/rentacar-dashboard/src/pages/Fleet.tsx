@@ -195,6 +195,7 @@ function AddVehicleModal({ open, onClose }: { open: boolean, onClose: () => void
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Veículo</DialogTitle>
+          <DialogDescription>Preencha os dados do veículo para adicionar à frota.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">

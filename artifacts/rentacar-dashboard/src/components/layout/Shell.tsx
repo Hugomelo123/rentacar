@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Car, Settings, MessageCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WhatsAppSimulator } from "@/components/whatsapp/WhatsAppSimulator";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -34,8 +34,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden lg:flex w-16 xl:w-20 border-r border-border bg-card flex-col items-center py-6 shrink-0">
-        <div className="h-10 w-10 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-bold text-xl mb-8 shadow-lg shadow-primary/20">
-          R
+        <div className="h-10 w-10 bg-primary text-primary-foreground rounded-xl flex items-center justify-center font-bold text-xl mb-8 shadow-lg shadow-primary/20" title="Autocunha">
+          A
         </div>
         <nav className="flex flex-col gap-4 w-full px-2 xl:px-3">
           {navItems.map((item) => {
@@ -152,6 +152,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
             side="right"
             className="p-0 w-full sm:w-[390px] bg-white border-l border-border flex flex-col [&>button]:hidden"
           >
+            <SheetTitle className="sr-only">Simulador WhatsApp Autocunha</SheetTitle>
+            <SheetDescription className="sr-only">
+              Canal de reserva e pré-check-in com assistente IA
+            </SheetDescription>
             <div className="flex items-center justify-between bg-[#128C7E] px-4 py-3 shrink-0">
               <div className="flex items-center gap-2">
                 <Car className="h-5 w-5 text-white" />

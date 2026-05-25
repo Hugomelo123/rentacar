@@ -317,6 +317,8 @@ export interface DashboardStats {
   revenue_today: number;
   occupancy_rate: number;
   overdue_returns?: number;
+  counter_time_saved_minutes?: number;
+  pre_checkin_completion_rate?: number;
 }
 
 export interface FleetSummary {
@@ -344,6 +346,7 @@ export interface ActivityEntry {
   status_pagamento: string;
   veiculo: string;
   overdue?: boolean;
+  cliente_idioma?: string | null;
 }
 
 export type ListFleetParams = {

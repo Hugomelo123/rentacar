@@ -611,7 +611,9 @@ export const GetDashboardStatsResponse = zod.object({
   "active_sos": zod.number(),
   "revenue_today": zod.number(),
   "occupancy_rate": zod.number(),
-  "overdue_returns": zod.number().optional()
+  "overdue_returns": zod.number().optional(),
+  "counter_time_saved_minutes": zod.number().optional(),
+  "pre_checkin_completion_rate": zod.number().optional()
 })
 
 
@@ -638,7 +640,8 @@ export const GetTodayActivityResponseItem = zod.object({
   "status_reserva": zod.string(),
   "status_pagamento": zod.string(),
   "veiculo": zod.string(),
-  "overdue": zod.boolean().optional()
+  "overdue": zod.boolean().optional(),
+  "cliente_idioma": zod.string().nullish()
 })
 export const GetTodayActivityResponse = zod.array(GetTodayActivityResponseItem)
 

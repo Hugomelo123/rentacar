@@ -259,9 +259,18 @@ router.post("/reservations/:id/upload-docs", async (req, res): Promise<void> => 
     return;
   }
 
+  const [existing] = await db.select().from(reservasTable).where(eq(reservasTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Reservation not found" });
+    return;
+  }
+
+  const prevDocs = (existing.docs_checkin_url as Record<string, unknown> | null) ?? {};
+  const mergedDocs = { ...prevDocs, ...(parsed.data.docs as Record<string, unknown>) };
+
   const [reservation] = await db
     .update(reservasTable)
-    .set({ docs_checkin_url: parsed.data.docs as Record<string, string> })
+    .set({ docs_checkin_url: mergedDocs })
     .where(eq(reservasTable.id, params.data.id))
     .returning();
 
