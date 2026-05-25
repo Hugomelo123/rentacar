@@ -21,7 +21,7 @@ export async function bootstrapDatabase(): Promise<void> {
     await pool.query(sql);
     logger.info("PostgreSQL schema ready");
   } catch (err) {
-    logger.error({ err }, "Database bootstrap failed");
-    throw err;
+    // Não bloquear arranque no Railway: healthcheck precisa de /api/healthz
+    logger.error({ err }, "Database bootstrap failed (app will start without DB)");
   }
 }
