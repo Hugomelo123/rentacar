@@ -142,11 +142,11 @@ export function getHumanInvalid(
 ): string {
   const lines: Record<ChatLang, Record<string, string>> = {
     pt: {
-      date: "Hmm, não apanhei bem a data 🤔 Pode dizer _«amanhã»_, _«25/05»_ ou tocar numa opção abaixo?",
-      duration: "Quantos dias precisa? Pode escrever _«5 dias»_ ou escolher uma opção.",
+      date: "Hmm, não apanhei bem a data 🤔 Pode dizer _amanhã_, _25/05_, _sábado_…",
+      duration: "Quantos dias precisa? Escreva _5 dias_, _uma semana_…",
       return: "A devolução tem de ser depois do levantamento, qual data prefere?",
-      time: "A que horas quer levantar? Pode escrever _«10h»_ ou escolher um intervalo.",
-      vehicle: "Não encontrei esse modelo na frota agora, diga _«SUV»_, _«Clio»_ ou escolha na lista.",
+      time: "A que horas quer levantar? Escreva _10h_, _14:30_, _de manhã_…",
+      vehicle: "Não encontrei esse modelo agora — diga _SUV_, _Clio_, _Golf_ ou toque no cartão com foto.",
       protection: "Prefere *Franquia ZERO* (sem caução) ou *Standard* (com caução no cartão)? Posso explicar a diferença.",
     },
     en: {
@@ -220,10 +220,10 @@ export function getStepBridge(lang: ChatLang, step: string, ctx: HumanCtx): stri
       ASK_RETURN: "Qual a *data de devolução*?",
       ASK_PICKUP_TIME: "A que *horas* prefere levantar o carro?",
       ASK_GROUP: "Quantas pessoas e malas vão na viagem?",
-      SHOW_FLEET: "Qual carro prefere? Pode dizer o tipo ou escolher abaixo.",
+      SHOW_FLEET: "Qual carro prefere? Escreva o modelo ou tipo (ex: _SUV_, _Clio_) — ou toque no cartão da foto.",
       ASK_PROTECTION: "Prefere *Franquia ZERO* ou *Standard*?",
-      SHOW_TERMS: "Leia as condições e aceite o contrato para seguir.",
-      SHOW_QUOTE: "Revise o orçamento, se estiver ok, aceite para pagar o sinal.",
+      SHOW_TERMS: "Leia as condições e responda *ACEITO* quando concordar.",
+      SHOW_QUOTE: "Revise o orçamento e escreva *ACEITO* para pagar o sinal de €50.",
       PAYMENT: "Falta só o *sinal de €50* para confirmar a reserva.",
       DOCS: "Envie fotos do passaporte e da carta de condução.",
       PHOTOS: "Envie as 4 fotos do carro no levantamento.",
@@ -306,8 +306,8 @@ export function getStepBridge(lang: ChatLang, step: string, ctx: HumanCtx): stri
 
 export function getAskPickupHuman(lang: ChatLang, name: string): string {
   const lines: Record<ChatLang, string> = {
-    pt: `Obrigada, *${name}*! Para quando precisa do carro na Madeira? Pode dizer _«amanhã»_, uma data, ou tocar numa opção 👇`,
-    en: `Thanks, *${name}*! When do you need the car in Madeira? _«tomorrow»_, a date, or tap below 👇`,
+    pt: `Obrigada, *${name}*! Para quando precisa do carro na Madeira? Escreva à vontade: _amanhã_, _25/05_, _sábado_, _daqui a 3 dias_…`,
+    en: `Thanks, *${name}*! When do you need the car in Madeira? Type freely: _tomorrow_, _25/05_, _next Saturday_…`,
     fr: `Merci, *${name}*! Pour quand avez-vous besoin de la voiture?`,
     es: `Gracias, *${name}*! ¿Para cuándo necesita el coche?`,
     de: `Danke, *${name}*! Wann brauchen Sie das Auto?`,
@@ -317,8 +317,8 @@ export function getAskPickupHuman(lang: ChatLang, name: string): string {
 
 export function getAskDurationHuman(lang: ChatLang, pickup: string): string {
   const lines: Record<ChatLang, string> = {
-    pt: `Levantamento *${pickup}*, perfeito. Quantos *dias* vai precisar do carro?`,
-    en: `Pick-up *${pickup}*, great. How many *days* do you need the car?`,
+    pt: `Levantamento *${pickup}*, perfeito. Quantos *dias* vai precisar do carro? _(ex: 5 dias, uma semana)_`,
+    en: `Pick-up *${pickup}*, great. How many *days* do you need the car? _(e.g. 5 days, one week)_`,
     fr: `Prise *${pickup}*. Combien de *jours*?`,
     es: `Recogida *${pickup}*. ¿Cuántos *días*?`,
     de: `Abholung *${pickup}*. Wie viele *Tage*?`,
@@ -333,8 +333,8 @@ export function getDurationConfirmedHuman(
   ret: string,
 ): string {
   const lines: Record<ChatLang, string> = {
-    pt: `Combinado: *${days} dia(s)* (${pickup} a ${ret}). A que horas quer levantar o carro?`,
-    en: `So *${days} day(s)* (${pickup} to ${ret}). What time for pick-up?`,
+    pt: `Combinado: *${days} dia(s)* (${pickup} a ${ret}). A que horas quer levantar? _(ex: 10h, 14:30, de manhã)_`,
+    en: `So *${days} day(s)* (${pickup} to ${ret}). What time for pick-up? _(e.g. 10am, 2:30pm)_`,
     fr: `*${days} jour(s)* (${pickup} au ${ret}). À quelle heure?`,
     es: `*${days} día(s)* (${pickup} al ${ret}). ¿A qué hora?`,
     de: `*${days} Tag(e)* (${pickup} bis ${ret}). Abholzeit?`,
@@ -344,8 +344,8 @@ export function getDurationConfirmedHuman(
 
 export function getFleetIntroHuman(lang: ChatLang, count: number, days: number): string {
   const lines: Record<ChatLang, string> = {
-    pt: `Encontrei *${count} carros* livres para os seus ${days} dia(s). Qual prefere? Pode escrever o modelo ou tocar num cartão.`,
-    en: `I found *${count} cars* for your ${days} day(s). Which do you prefer? Type a model or tap a card.`,
+    pt: `Encontrei *${count} carros* livres para os seus ${days} dia(s). Diga qual prefere _(Clio, SUV, Golf…)_ ou toque só no cartão com foto.`,
+    en: `I found *${count} cars* for your ${days} day(s). Tell me which you prefer _(Clio, SUV, Golf…)_ or tap a photo card only.`,
     fr: `*${count} véhicules* disponibles pour ${days} jour(s).`,
     es: `*${count} coches* para ${days} día(s).`,
     de: `*${count} Fahrzeuge* für ${days} Tag(e).`,

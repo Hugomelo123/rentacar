@@ -69,7 +69,7 @@ export function getLinkLanguagePrompt(): string {
   return (
     "🌍 *Em que idioma prefere que eu fale consigo?*\n" +
     "*Which language would you like me to use?*\n\n" +
-    "_Toque numa opção abaixo 👇_"
+    "Responda por escrito, por exemplo: *português*, *english*, *français*, *español* ou *deutsch* (também aceito PT, EN, FR, ES, DE)."
   );
 }
 
@@ -185,7 +185,7 @@ const T: Record<ChatLang, Dict> = {
       "🌙 18:00 a 22:00 (+ taxa noturna se fora do horário)",
     ],
     rentalSummary:
-      "📋 *Resumo do pedido*\n• {days} dia(s), levantamento {pickup}, devolução {return}\n• Horário: {time}\n\nQuantas pessoas viajam e quanta bagagem?",
+      "📋 *Resumo do pedido*\n• {days} dia(s), levantamento {pickup}, devolução {return}\n• Horário: {time}\n\nQuantas pessoas viajam e quanta bagagem? _(ex: 2 adultos e 2 malas médias — escreva à vontade)_",
     askGroup:
       "Perfeito. *{days} dia(s)* de aluguer, devolução *{return}*.\n\nQuantas pessoas viajam e quanta bagagem têm?",
     loadingFleet: "A carregar frota disponível...",
@@ -198,7 +198,10 @@ const T: Record<ChatLang, Dict> = {
     termsQuestions: "❓ Tenho uma dúvida (falar com equipa)",
     termsReply:
       "Sem problema! A nossa equipa contacta-o em breve. Pode também continuar e esclarecer no balcão no dia do levantamento.\n\nSegue para o orçamento:",
-    quoteIntro: "Com base nas condições aceites, aqui está o seu *orçamento contratual*:",
+    quoteIntro:
+      "Com base nas condições aceites, aqui está o seu *orçamento contratual*:\n\n✍️ Se estiver de acordo, escreva *ACEITO*. Para mudar a proteção, escreva *ALTERAR PROTEÇÃO*.",
+    termsAcceptHint:
+      "\n\n✍️ Quando estiver de acordo com as condições, responda *ACEITO*. Se tiver dúvidas, escreva *DUVIDA*.",
     quoteKms: "Quilometragem ilimitada (Madeira)",
     quoteFuel: "Combustível: Cheio/Cheio",
     quoteMinAge: "Condutor: min. 21 anos",
@@ -241,7 +244,7 @@ const T: Record<ChatLang, Dict> = {
       "Ótimo, *{name}*! 📱\n\nQual é o seu *telemóvel* (com indicativo)?\n_Ex: +351 912 345 678, usamos só para a reserva e levantamento._",
     phoneQuick: ["+351 912 000 000", "+351 965 000 000", "+44 7700 900000", "✍️ Escrever outro número"],
     askPickupLocation:
-      "Onde prefere *levantar o carro*?",
+      "Onde prefere *levantar o carro*?\n_Ex: aeroporto FNC, loja Funchal, hotel, ou outro local na ilha — escreva à sua maneira._",
     pickupLocationOptions: [
       "✈️ Aeroporto Madeira (FNC)",
       "🏢 Loja Autocunha, Funchal",
@@ -249,7 +252,7 @@ const T: Record<ChatLang, Dict> = {
       "📍 Outro local na ilha",
     ],
     askFlight:
-      "Tem *voo para a Madeira*? Indique a hora de chegada, alinhamos o levantamento.\n_(Ou toque «Sem voo»)_",
+      "Tem *voo para a Madeira*? Indique a *hora de chegada* (ex: _chego às 14h30_) para alinharmos o levantamento.\n_Se já estiver na ilha, escreva_ *sem voo*.",
     flightSkip: "Sem voo / já estou na ilha",
     flightQuick: ["✈️ Chego ~08:00", "✈️ Chego ~12:00", "✈️ Chego ~16:00", "✈️ Chego ~20:00"],
     intakeSummary:

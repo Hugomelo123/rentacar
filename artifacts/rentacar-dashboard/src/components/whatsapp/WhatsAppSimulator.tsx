@@ -24,7 +24,6 @@ import {
   generateOcrData,
   getLinkLanguagePrompt,
   getLinkWelcomeIntro,
-  languageOptionLabels,
   parseLanguageFromChoice,
   isCustomDurationOption,
   localeFor,
@@ -142,6 +141,8 @@ function isZeroProtection(opt: string) {
 }
 
 function isAcceptQuote(opt: string) {
+  const raw = opt.trim();
+  if (/^aceito$/i.test(raw) || /^accept$/i.test(raw)) return true;
   return /aceitar|accept|accepter|aceptar|annehmen|✅/i.test(opt) && !/alterar|change|changer|cambiar|ändern/i.test(opt);
 }
 
@@ -150,10 +151,16 @@ function isChangeProtection(opt: string) {
 }
 
 function isConfirmSos(opt: string) {
-  return /confirmar|confirm|confirmer|bestätigen/i.test(opt) && !/cancel|annul|abbrechen/i.test(opt);
+  return /confirmar|confirm|confirmer|bestätigen/i.test(opt) && !/cancel|annul|abbrechen|cancelar/i.test(opt);
+}
+
+function isCancelSos(opt: string) {
+  return /cancelar|cancel|annul|abbrechen|engano|mistake|erreur|error/i.test(opt);
 }
 
 function isAcceptTerms(opt: string) {
+  const t = opt.trim();
+  if (/^aceito$/i.test(t) || /^accept$/i.test(t) || /^ok$/i.test(t)) return true;
   if (/✅/i.test(opt) && /(aceito|aceitar|accept|accepter|aceptar|annehmen|li e|j'accepte|ich akzeptiere)/i.test(opt)) {
     return true;
   }
@@ -177,7 +184,7 @@ function isAffirmativeFromOpt(opt: string) {
 }
 
 function isTermsQuestion(opt: string) {
-  return /dúvida|doubt|question|frage|duda/i.test(opt);
+  return /dúvida|duvida|doubt|question|frage|duda|help|ajuda/i.test(opt);
 }
 
 function contractRefFrom(id?: number | null) {
@@ -279,14 +286,7 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
 
   const promptLanguageChoice = useCallback(() => {
     botSay({ text: getLinkWelcomeIntro(), type: "text" }, 400);
-    botSay(
-      {
-        text: getLinkLanguagePrompt(),
-        type: "options",
-        options: languageOptionLabels(),
-      },
-      1100,
-    );
+    botSay({ text: getLinkLanguagePrompt(), type: "text" }, 1100);
   }, [botSay]);
 
   const confirmLanguageAndAskName = useCallback(
@@ -309,46 +309,28 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
 
   const askPhone = useCallback(
     (name: string, l: ChatLang) => {
-      botSay({
-        text: t(l, "askPhone", { name }),
-        type: "options",
-        options: tList(l, "phoneQuick"),
-      });
+      botSay({ text: t(l, "askPhone", { name }), type: "text" });
     },
     [botSay],
   );
 
   const askPickup = useCallback(
     (name: string, l: ChatLang) => {
-      botSay(
-        {
-          text: getAskPickupHuman(l, name),
-          type: "options",
-          options: quickDates(l).map((d) => d.label),
-        },
-      );
+      botSay({ text: getAskPickupHuman(l, name), type: "text" });
     },
     [botSay],
   );
 
   const askPickupLocation = useCallback(
     (l: ChatLang) => {
-      botSay({
-        text: t(l, "askPickupLocation"),
-        type: "options",
-        options: tList(l, "pickupLocationOptions"),
-      });
+      botSay({ text: t(l, "askPickupLocation"), type: "text" });
     },
     [botSay],
   );
 
   const askFlight = useCallback(
     (l: ChatLang) => {
-      botSay({
-        text: t(l, "askFlight"),
-        type: "options",
-        options: [...tList(l, "flightQuick"), t(l, "flightSkip")],
-      });
+      botSay({ text: t(l, "askFlight"), type: "text" });
     },
     [botSay],
   );
@@ -361,13 +343,7 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
 
   const askDuration = useCallback(
     (pickup: Date, l: ChatLang) => {
-      botSay(
-        {
-          text: getAskDurationHuman(l, fmt(pickup, l)),
-          type: "options",
-          options: buildDurationOptions(l, pickup).map((o) => o.label),
-        },
-      );
+      botSay({ text: getAskDurationHuman(l, fmt(pickup, l)), type: "text" });
     },
     [botSay],
   );
@@ -382,13 +358,10 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
   const confirmDurationAndAskTime = useCallback(
     (pickup: Date, days: number, l: ChatLang) => {
       const ret = addDays(pickup, days);
-      botSay(
-        {
-          text: getDurationConfirmedHuman(l, days, fmt(pickup, l), fmt(ret, l)),
-          type: "options",
-          options: pickupTimeOptions(l),
-        },
-      );
+      botSay({
+        text: getDurationConfirmedHuman(l, days, fmt(pickup, l), fmt(ret, l)),
+        type: "text",
+      });
     },
     [botSay],
   );
@@ -403,8 +376,7 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
             days,
             time: time || "10:00",
           }),
-          type: "options",
-          options: tList(l, "groupOptions"),
+          type: "text",
         },
         1300,
       );
@@ -476,7 +448,6 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
             text: intro,
             type: "fleet",
             vehicles,
-            options: vehicles.map((v) => fleetOptionLabel(v)),
           },
         ]);
       }, 1400);
@@ -487,16 +458,7 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
 
   const askProtection = useCallback(
     (vehicle: any, l: ChatLang) => {
-      botSay(
-        {
-          text: getVehicleChosenHuman(l, vehicle.marca_modelo),
-          type: "options",
-          options: [
-            t(l, "protectionZero", { extra: vehicle.extra_franquia_zero || 15 }),
-            t(l, "protectionStandard", { caucao: vehicle.valor_caucao || 1200 }),
-          ],
-        },
-      );
+      botSay({ text: getVehicleChosenHuman(l, vehicle.marca_modelo), type: "text" });
     },
     [botSay],
   );
@@ -529,9 +491,8 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
     (vehicle: any, l: ChatLang) => {
       botSay(
         {
-          text: t(l, "rentalTerms", { caucao: vehicle.valor_caucao || 1200 }),
-          type: "terms",
-          options: [t(l, "acceptTerms"), t(l, "termsQuestions")],
+          text: t(l, "rentalTerms", { caucao: vehicle.valor_caucao || 1200 }) + t(l, "termsAcceptHint"),
+          type: "text",
         },
         1800,
       );
@@ -642,6 +603,36 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
         ) {
           return;
         }
+      }
+
+      if (step === "SOS_CONFIRM") {
+        if (isCancelSos(text)) {
+          botSay({ text: l === "pt" ? "SOS cancelado. Estamos aqui se precisar." : "SOS cancelled." }, 600);
+          setStep("ACTIVE");
+          return;
+        }
+        if (isConfirmSos(text) && reservationId) {
+          createSos.mutate(
+            {
+              data: {
+                reserva_id: reservationId,
+                localizacao_latitude: 32.6485 + Math.random() * 0.02,
+                localizacao_longitude: -16.908 + Math.random() * 0.02,
+                foto_problema_url:
+                  "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&h=300&fit=crop",
+              },
+            },
+            {
+              onSuccess: () => {
+                botSay({ text: t(l, "sosSent") }, 800);
+                setStep("DONE");
+              },
+            },
+          );
+          return;
+        }
+        remindCurrentStep(l);
+        return;
       }
 
       if (step === "ACTIVE" || step === "DONE") {
@@ -917,7 +908,12 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       }
 
       if (step === "SHOW_QUOTE") {
-        if (isAcceptQuote(text) || isPayDeposit(text) || (isAffirmative && !isChangeProtection(text))) {
+        if (
+          isAcceptQuote(text) ||
+          isAcceptTerms(text) ||
+          isPayDeposit(text) ||
+          (isAffirmative && !isChangeProtection(text))
+        ) {
           setStep("PAYMENT");
           botSay({ text: t(l, "paymentPrompt"), type: "payment" }, 1000);
           return;
@@ -980,6 +976,8 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       buildQuote,
       showQuote,
       listFleet.data,
+      createSos,
+      reservationId,
     ],
   );
 
@@ -1078,7 +1076,7 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
           remindCurrentStep(lang);
         }
       } else if (step === "SHOW_QUOTE") {
-        if (isAcceptQuote(opt) || isPayDeposit(opt)) {
+        if (isAcceptQuote(opt) || isAcceptTerms(opt) || isPayDeposit(opt)) {
           setStep("PAYMENT");
           botSay({ text: t(lang, "paymentPrompt"), type: "payment" }, 1000);
         } else if (isChangeProtection(opt)) {
@@ -1359,9 +1357,12 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       setStep("SOS_CONFIRM");
       botSay(
         {
-          text: t(lang, "sosActive"),
-          type: "options",
-          options: [t(lang, "confirmSos"), t(lang, "cancelSos")],
+          text:
+            t(lang, "sosActive") +
+            (lang === "pt"
+              ? "\n\n✍️ Escreva *CONFIRMAR* para enviar a localização ou *CANCELAR* se foi engano."
+              : "\n\n✍️ Type *CONFIRM* to send location or *CANCEL* if it was a mistake."),
+          type: "text",
         },
         700,
       );
@@ -1508,34 +1509,11 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
                       ))}
                     </div>
                   )}
-                  {msg.options && msg.options.length > 0 && (
-                    <div className="mt-2 flex flex-col gap-1.5 w-full max-w-[320px]">
-                      <p className="text-[10px] text-gray-500 px-0.5">
-                        {lang === "pt" ? "Ou escolha na lista:" : "Or pick from the list:"}
-                      </p>
-                      {msg.options.map((opt) => (
-                        <Button
-                          key={opt}
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs justify-start border-[#25D366]/60 text-[#075E54] hover:bg-[#dcf8c6] h-auto py-2 whitespace-normal text-left"
-                          onClick={() => handleOptionClick(opt)}
-                        >
-                          {opt}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
                 </>
               )}
 
               {msg.type === "quote" && msg.quoteData && (
-                <QuoteCard
-                  quote={msg.quoteData}
-                  lang={lang}
-                  onAccept={() => handleOptionClick(t(lang, "acceptQuote"))}
-                  onAlter={() => handleOptionClick(t(lang, "changeProtection"))}
-                />
+                <QuoteCard quote={msg.quoteData} lang={lang} />
               )}
 
               {msg.type === "payment" && (
@@ -1646,17 +1624,7 @@ function WhatsAppText({ text }: { text: string }) {
   );
 }
 
-function QuoteCard({
-  quote,
-  lang,
-  onAccept,
-  onAlter,
-}: {
-  quote: QuoteData;
-  lang: ChatLang;
-  onAccept: () => void;
-  onAlter: () => void;
-}) {
+function QuoteCard({ quote, lang }: { quote: QuoteData; lang: ChatLang }) {
   return (
     <div className="mt-2 rounded-lg border border-gray-200 overflow-hidden text-xs">
       <div className="bg-[#075E54] text-white px-3 py-2 font-bold text-sm leading-snug">
@@ -1685,14 +1653,6 @@ function QuoteCard({
           <span>Sinal</span>
           <span className="font-bold">€{quote.sinal}</span>
         </div>
-      </div>
-      <div className="bg-white px-2 pb-2 pt-1 flex flex-col gap-1.5">
-        <Button size="sm" className="w-full bg-[#25D366] text-white text-xs font-semibold" onClick={onAccept}>
-          {t(lang, "acceptQuote")}
-        </Button>
-        <Button size="sm" variant="outline" className="w-full text-xs" onClick={onAlter}>
-          {t(lang, "changeProtection")}
-        </Button>
       </div>
     </div>
   );
