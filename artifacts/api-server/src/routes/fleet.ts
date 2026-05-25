@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, frotaTable, reservasTable } from "@workspace/db";
+import { tryDb } from "../lib/db-safe";
+import { getDemoFleetById, listDemoFleet } from "../lib/demo-mode";
 import {
   ListFleetQueryParams,
   CreateVehicleBody,
@@ -37,13 +39,27 @@ router.get("/fleet", async (req, res): Promise<void> => {
     return;
   }
 
-  let query = db.select().from(frotaTable).$dynamic();
-  if (parsed.data.status) {
-    query = query.where(eq(frotaTable.status, parsed.data.status as "disponivel" | "alugado" | "manutencao" | "reservado_temporario"));
-  }
+  const status = parsed.data.status as
+    | "disponivel"
+    | "alugado"
+    | "manutencao"
+    | "reservado_temporario"
+    | undefined;
 
-  const vehicles = await query;
-  res.json(ListFleetResponse.parse(vehicles.map(parseVehicle)));
+  const fromDb = await tryDb(async () => {
+    let query = db.select().from(frotaTable).$dynamic();
+    if (status) {
+      query = query.where(eq(frotaTable.status, status));
+    }
+    return query;
+  });
+
+  const vehicles =
+    fromDb && fromDb.length > 0
+      ? fromDb
+      : listDemoFleet(status);
+
+  res.json(ListFleetResponse.parse(vehicles.map((v) => parseVehicle(v as unknown as Record<string, unknown>))));
 });
 
 router.post("/fleet", async (req, res): Promise<void> => {
@@ -70,7 +86,10 @@ router.get("/fleet/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [vehicle] = await db.select().from(frotaTable).where(eq(frotaTable.id, params.data.id));
+  const fromDb = await tryDb(() =>
+    db.select().from(frotaTable).where(eq(frotaTable.id, params.data.id)),
+  );
+  const vehicle = fromDb?.[0] ?? getDemoFleetById(params.data.id);
   if (!vehicle) {
     res.status(404).json({ error: "Vehicle not found" });
     return;

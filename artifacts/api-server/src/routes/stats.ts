@@ -1,6 +1,12 @@
 import { Router, type IRouter } from "express";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { db, reservasTable, frotaTable, alertasSosTable } from "@workspace/db";
+import { tryDb } from "../lib/db-safe";
+import {
+  getDemoDashboardStats,
+  getDemoFleetSummary,
+  getDemoTodayActivity,
+} from "../lib/demo-mode";
 import {
   GetDashboardStatsResponse,
   GetFleetSummaryResponse,
@@ -18,6 +24,18 @@ function dateOnly(value: string): string {
 }
 
 router.get("/stats/dashboard", async (_req, res): Promise<void> => {
+  const useDemo = await tryDb(async () => {
+    const [fleet, reservations] = await Promise.all([
+      db.select().from(frotaTable),
+      db.select().from(reservasTable),
+    ]);
+    return fleet.length === 0 || reservations.length === 0;
+  });
+  if (useDemo === null || useDemo === true) {
+    res.json(GetDashboardStatsResponse.parse(getDemoDashboardStats()));
+    return;
+  }
+
   const today = getTodayString();
 
   const allReservations = await db.select().from(reservasTable);
@@ -77,7 +95,11 @@ router.get("/stats/dashboard", async (_req, res): Promise<void> => {
 });
 
 router.get("/stats/fleet-summary", async (_req, res): Promise<void> => {
-  const fleet = await db.select().from(frotaTable);
+  const fleet = await tryDb(() => db.select().from(frotaTable));
+  if (!fleet || fleet.length === 0) {
+    res.json(GetFleetSummaryResponse.parse(getDemoFleetSummary()));
+    return;
+  }
 
   const summary = {
     disponivel: fleet.filter((v) => v.status === "disponivel").length,
@@ -91,6 +113,18 @@ router.get("/stats/fleet-summary", async (_req, res): Promise<void> => {
 });
 
 router.get("/stats/today-activity", async (_req, res): Promise<void> => {
+  const useDemoActivity = await tryDb(async () => {
+    const [f, r] = await Promise.all([
+      db.select().from(frotaTable),
+      db.select().from(reservasTable),
+    ]);
+    return f.length === 0 || r.length === 0;
+  });
+  if (useDemoActivity === null || useDemoActivity === true) {
+    res.json(GetTodayActivityResponse.parse(getDemoTodayActivity()));
+    return;
+  }
+
   const today = getTodayString();
 
   const allReservations = await db.select().from(reservasTable);

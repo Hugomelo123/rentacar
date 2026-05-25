@@ -1,6 +1,17 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, reservasTable, frotaTable, configOperacaoTable } from "@workspace/db";
+import { tryDb } from "../lib/db-safe";
+import {
+  addDemoReservation,
+  getDemoConfig,
+  getDemoFleetById,
+  getDemoReservation,
+  isDemoMode,
+  listDemoReservations,
+  updateDemoReservation,
+} from "../lib/demo-mode";
+import { buildDemoReservations } from "@workspace/db/demo-data";
 import {
   ListReservationsQueryParams,
   CreateReservationBody,
@@ -70,25 +81,59 @@ router.get("/reservations", async (req, res): Promise<void> => {
     conditions.push(eq(reservasTable.status_pagamento, parsed.data.status_pagamento as "pendente" | "pago_sinal" | "falhado"));
   }
 
-  const reservations = await db
-    .select()
-    .from(reservasTable)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(reservasTable.created_at);
+  const fromDb = await tryDb(() =>
+    db
+      .select()
+      .from(reservasTable)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(reservasTable.created_at),
+  );
+
+  if (!fromDb) {
+    let list = listDemoReservations();
+    if (parsed.data.status_reserva) {
+      list = list.filter((r) => r.status_reserva === parsed.data.status_reserva);
+    }
+    if (parsed.data.status_pagamento) {
+      list = list.filter((r) => r.status_pagamento === parsed.data.status_pagamento);
+    }
+    res.json(
+      ListReservationsResponse.parse(
+        list.map((r) => {
+          const v = getDemoFleetById(r.veiculo_id);
+          return parseReservation(
+            r as unknown as Record<string, unknown>,
+            v as unknown as Record<string, unknown> | undefined,
+          );
+        }),
+      ),
+    );
+    return;
+  }
+
+  const reservations = fromDb.length > 0 ? fromDb : buildDemoReservations();
 
   const vehicleIds = [...new Set(reservations.map((r) => r.veiculo_id))];
-  const vehicles = vehicleIds.length > 0
-    ? await db.select().from(frotaTable).where(eq(frotaTable.id, vehicleIds[0]))
-    : [];
+  const vehicleMap = new Map<number, Record<string, unknown>>();
+  for (const vid of vehicleIds) {
+    const fromFleet = await tryDb(() =>
+      db.select().from(frotaTable).where(eq(frotaTable.id, vid)),
+    );
+    const v = fromFleet?.[0] ?? getDemoFleetById(vid);
+    if (v) vehicleMap.set(vid, v as unknown as Record<string, unknown>);
+  }
 
-  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
-
-  res.json(ListReservationsResponse.parse(
-    reservations.map((r) => {
-      const v = vehicleMap.get(r.veiculo_id);
-      return parseReservation(r as unknown as Record<string, unknown>, v as unknown as Record<string, unknown> | undefined);
-    })
-  ));
+  res.json(
+    ListReservationsResponse.parse(
+      reservations.map((r) => {
+        const v = vehicleMap.get(r.veiculo_id);
+        return parseReservation(
+          r as unknown as Record<string, unknown>,
+          v as unknown as Record<string, unknown> | undefined,
+        );
+      }),
+    ),
+  );
 });
 
 router.post("/reservations", async (req, res): Promise<void> => {
@@ -98,63 +143,122 @@ router.post("/reservations", async (req, res): Promise<void> => {
     return;
   }
 
-  const [vehicle] = await db.select().from(frotaTable).where(eq(frotaTable.id, parsed.data.veiculo_id));
+  const vehicleFromDb = await tryDb(() =>
+    db.select().from(frotaTable).where(eq(frotaTable.id, parsed.data.veiculo_id)),
+  );
+  const vehicle =
+    vehicleFromDb?.[0] ?? getDemoFleetById(parsed.data.veiculo_id);
   if (!vehicle) {
     res.status(404).json({ error: "Vehicle not found" });
     return;
   }
 
-  let [config] = await db.select().from(configOperacaoTable).limit(1);
-  if (!config) {
-    config = { id: 1, horario_abertura: "08:00", horario_fecho: "22:00", taxa_noturna: "30.00", idade_minima: 21, taxa_condutor_jovem: "15.00", stripe_secret_key: null, stripe_webhook_secret: null };
-  }
+  const config = isDemoMode()
+    ? getDemoConfig()
+    : (await tryDb(() => db.select().from(configOperacaoTable).limit(1)))?.[0] ?? {
+        horario_abertura: "08:00",
+        horario_fecho: "22:00",
+        taxa_noturna: "30.00",
+        idade_minima: 21,
+        taxa_condutor_jovem: "15.00",
+      };
 
   const days = calculateDays(parsed.data.data_levantamento, parsed.data.data_devolucao);
-  const precoDia = parseFloat(vehicle.preco_base_dia);
-  const extraFranquia = parsed.data.tipo_protecao === "franquia_zero" ? parseFloat(vehicle.extra_franquia_zero) : 0;
+  const precoDia = parseFloat(String(vehicle.preco_base_dia));
+  const extraFranquia =
+    parsed.data.tipo_protecao === "franquia_zero"
+      ? parseFloat(String(vehicle.extra_franquia_zero))
+      : 0;
 
-  let taxaNoturna = null;
-  if (parsed.data.hora_chegada_voo && isOutOfHours(parsed.data.hora_chegada_voo, config.horario_abertura, config.horario_fecho)) {
-    taxaNoturna = parseFloat(config.taxa_noturna ?? "30");
+  let taxaNoturna: number | null = null;
+  if (
+    parsed.data.hora_chegada_voo &&
+    isOutOfHours(
+      parsed.data.hora_chegada_voo,
+      config.horario_abertura,
+      config.horario_fecho,
+    )
+  ) {
+    taxaNoturna = parseFloat(String(config.taxa_noturna ?? "30"));
   }
 
   const valorTotal = days * precoDia + extraFranquia + (taxaNoturna ?? 0);
+  const stripeId = `pi_simulated_${Date.now()}`;
 
-  // Mark vehicle as temporarily reserved
-  await db.update(frotaTable).set({ status: "reservado_temporario" }).where(eq(frotaTable.id, vehicle.id));
+  if (isDemoMode()) {
+    const reservation = addDemoReservation({
+      cliente_telefone: parsed.data.cliente_telefone,
+      cliente_nome: parsed.data.cliente_nome,
+      cliente_idioma: parsed.data.cliente_idioma ?? null,
+      veiculo_id: parsed.data.veiculo_id,
+      tipo_protecao: parsed.data.tipo_protecao,
+      data_levantamento: parsed.data.data_levantamento,
+      data_devolucao: parsed.data.data_devolucao,
+      hora_chegada_voo: parsed.data.hora_chegada_voo ?? null,
+      taxa_noturna_aplicada: taxaNoturna ? String(taxaNoturna) : null,
+      valor_total: String(valorTotal),
+      status_pagamento: "pendente",
+      status_reserva: "criada",
+      docs_checkin_url: null,
+      fotos_estado_carro: null,
+      stripe_intent_id: stripeId,
+    });
+    const parsedReservation = parseReservation(
+      reservation as unknown as Record<string, unknown>,
+      vehicle as unknown as Record<string, unknown>,
+    );
+    res.status(201).json({
+      reservation: GetReservationResponse.parse(parsedReservation),
+      payment_url: `https://checkout.stripe.com/simulated/${stripeId}`,
+    });
+    return;
+  }
 
-  const [reservation] = await db.insert(reservasTable).values({
-    cliente_telefone: parsed.data.cliente_telefone,
-    cliente_nome: parsed.data.cliente_nome,
-    cliente_idioma: parsed.data.cliente_idioma,
-    veiculo_id: parsed.data.veiculo_id,
-    tipo_protecao: parsed.data.tipo_protecao,
-    data_levantamento: parsed.data.data_levantamento,
-    data_devolucao: parsed.data.data_devolucao,
-    hora_chegada_voo: parsed.data.hora_chegada_voo,
-    taxa_noturna_aplicada: taxaNoturna ? String(taxaNoturna) : null,
-    valor_total: String(valorTotal),
-    status_pagamento: "pendente",
-    status_reserva: "criada",
-    stripe_intent_id: `pi_simulated_${Date.now()}`,
-  }).returning();
+  await db
+    .update(frotaTable)
+    .set({ status: "reservado_temporario" })
+    .where(eq(frotaTable.id, vehicle.id));
 
-  // Release after 15 min if no payment
+  const [reservation] = await db
+    .insert(reservasTable)
+    .values({
+      cliente_telefone: parsed.data.cliente_telefone,
+      cliente_nome: parsed.data.cliente_nome,
+      cliente_idioma: parsed.data.cliente_idioma,
+      veiculo_id: parsed.data.veiculo_id,
+      tipo_protecao: parsed.data.tipo_protecao,
+      data_levantamento: parsed.data.data_levantamento,
+      data_devolucao: parsed.data.data_devolucao,
+      hora_chegada_voo: parsed.data.hora_chegada_voo,
+      taxa_noturna_aplicada: taxaNoturna ? String(taxaNoturna) : null,
+      valor_total: String(valorTotal),
+      status_pagamento: "pendente",
+      status_reserva: "criada",
+      stripe_intent_id: stripeId,
+    })
+    .returning();
+
   setTimeout(async () => {
-    const [r] = await db.select().from(reservasTable).where(eq(reservasTable.id, reservation.id));
+    const [r] = await db
+      .select()
+      .from(reservasTable)
+      .where(eq(reservasTable.id, reservation.id));
     if (r && r.status_pagamento === "pendente") {
-      await db.update(frotaTable).set({ status: "disponivel" }).where(eq(frotaTable.id, vehicle.id));
+      await db
+        .update(frotaTable)
+        .set({ status: "disponivel" })
+        .where(eq(frotaTable.id, vehicle.id));
     }
   }, 15 * 60 * 1000);
 
   const parsedReservation = parseReservation(
     reservation as unknown as Record<string, unknown>,
-    vehicle as unknown as Record<string, unknown>
+    vehicle as unknown as Record<string, unknown>,
   );
 
   res.status(201).json({
     reservation: GetReservationResponse.parse(parsedReservation),
-    payment_url: `https://checkout.stripe.com/simulated/${reservation.stripe_intent_id}`,
+    payment_url: `https://checkout.stripe.com/simulated/${stripeId}`,
   });
 });
 
@@ -165,17 +269,28 @@ router.get("/reservations/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [reservation] = await db.select().from(reservasTable).where(eq(reservasTable.id, params.data.id));
+  const fromDb = await tryDb(() =>
+    db.select().from(reservasTable).where(eq(reservasTable.id, params.data.id)),
+  );
+  const reservation = fromDb?.[0] ?? getDemoReservation(params.data.id);
   if (!reservation) {
     res.status(404).json({ error: "Reservation not found" });
     return;
   }
 
-  const [vehicle] = await db.select().from(frotaTable).where(eq(frotaTable.id, reservation.veiculo_id));
+  const vehicleFromDb = await tryDb(() =>
+    db.select().from(frotaTable).where(eq(frotaTable.id, reservation.veiculo_id)),
+  );
+  const vehicle = vehicleFromDb?.[0] ?? getDemoFleetById(reservation.veiculo_id);
 
-  res.json(GetReservationResponse.parse(
-    parseReservation(reservation as unknown as Record<string, unknown>, vehicle as unknown as Record<string, unknown> | undefined)
-  ));
+  res.json(
+    GetReservationResponse.parse(
+      parseReservation(
+        reservation as unknown as Record<string, unknown>,
+        vehicle as unknown as Record<string, unknown> | undefined,
+      ),
+    ),
+  );
 });
 
 router.patch("/reservations/:id", async (req, res): Promise<void> => {
@@ -195,6 +310,27 @@ router.patch("/reservations/:id", async (req, res): Promise<void> => {
   if (parsed.data.status_reserva !== undefined) updateData.status_reserva = parsed.data.status_reserva;
   if (parsed.data.status_pagamento !== undefined) updateData.status_pagamento = parsed.data.status_pagamento;
   if (parsed.data.hora_chegada_voo !== undefined) updateData.hora_chegada_voo = parsed.data.hora_chegada_voo;
+
+  if (isDemoMode()) {
+    const reservation = updateDemoReservation(
+      params.data.id,
+      updateData as Parameters<typeof updateDemoReservation>[1],
+    );
+    if (!reservation) {
+      res.status(404).json({ error: "Reservation not found" });
+      return;
+    }
+    const vehicle = getDemoFleetById(reservation.veiculo_id);
+    res.json(
+      UpdateReservationResponse.parse(
+        parseReservation(
+          reservation as unknown as Record<string, unknown>,
+          vehicle as unknown as Record<string, unknown> | undefined,
+        ),
+      ),
+    );
+    return;
+  }
 
   const [reservation] = await db
     .update(reservasTable)
@@ -225,6 +361,26 @@ router.post("/reservations/:id/simulate-payment", async (req, res): Promise<void
   const params = SimulatePaymentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (isDemoMode()) {
+    const reservation = updateDemoReservation(params.data.id, {
+      status_pagamento: "pago_sinal",
+    });
+    if (!reservation) {
+      res.status(404).json({ error: "Reservation not found" });
+      return;
+    }
+    const vehicle = getDemoFleetById(reservation.veiculo_id);
+    res.json(
+      SimulatePaymentResponse.parse(
+        parseReservation(
+          reservation as unknown as Record<string, unknown>,
+          vehicle as unknown as Record<string, unknown> | undefined,
+        ),
+      ),
+    );
     return;
   }
 

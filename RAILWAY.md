@@ -33,7 +33,21 @@ No [Railway Dashboard](https://railway.app):
 6. No serviço da app → **Variables** (obrigatório):
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
    - `NODE_ENV` = `production`
+   - `AUTO_SEED_DEMO` = `true` (preenche frota demo ao arrancar — **default**)
+   - `AUTO_SEED_RESET` = `true` (cada deploy: frota atualizada, reservas/SOS limpos — demo sempre fresca)
 7. **Deploy** / **Redeploy**.
+
+### Dados automáticos (já no código)
+
+**Sem Postgres** (só app no Railway): a API devolve na mesma **12 viaturas**, **config**, **4 reservas de exemplo** e estatísticas do painel. O chat WhatsApp também grava reservas em memória (até ao próximo redeploy).
+
+**Com Postgres** ligado, **não precisas de `pnpm db:seed` manual**:
+
+- **12 viaturas** demo (preços/fotos atualizados a cada arranque)
+- **Config** operacional (horários, taxas)
+- Com `AUTO_SEED_RESET=true`: apaga reservas e alertas SOS antigos (painel começa “limpo”)
+
+Para **manter** reservas entre redeploys: `AUTO_SEED_RESET=false`
 
 Se o build falhar com `pnpm lockfile` ou `vite not found`, faça pull do `main` mais recente (Dockerfile corrigido).
 

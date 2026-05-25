@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, alertasSosTable, reservasTable, frotaTable } from "@workspace/db";
+import { isDemoMode, listDemoSosAlerts, resolveDemoSos } from "../lib/demo-mode";
 import {
   ListSosAlertsQueryParams,
   CreateSosAlertBody,
@@ -31,6 +32,12 @@ router.get("/sos", async (req, res): Promise<void> => {
   const parsed = ListSosAlertsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  if (isDemoMode()) {
+    const status = parsed.data.status as "ativo" | "resolvido" | undefined;
+    res.json(ListSosAlertsResponse.parse(listDemoSosAlerts(status)));
     return;
   }
 
@@ -75,6 +82,16 @@ router.patch("/sos/:id/resolve", async (req, res): Promise<void> => {
   const params = ResolveSosAlertParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (isDemoMode()) {
+    const alert = resolveDemoSos(params.data.id);
+    if (!alert) {
+      res.status(404).json({ error: "SOS alert not found" });
+      return;
+    }
+    res.json(ResolveSosAlertResponse.parse(alert));
     return;
   }
 

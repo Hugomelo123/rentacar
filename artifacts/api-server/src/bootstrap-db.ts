@@ -20,8 +20,18 @@ export async function bootstrapDatabase(): Promise<void> {
     const { getPool } = await import("@workspace/db");
     await getPool().query(sql);
     logger.info("PostgreSQL schema ready");
+
+    const autoSeed = process.env.AUTO_SEED_DEMO !== "false";
+    if (autoSeed) {
+      const { bootstrapDemoData } = await import("@workspace/db/seed-runtime");
+      const reset = process.env.AUTO_SEED_RESET !== "false";
+      await bootstrapDemoData({ reset });
+      logger.info(
+        { reset },
+        "Demo data ready (fleet synced; reset clears reservations/SOS)",
+      );
+    }
   } catch (err) {
-    // Não bloquear arranque no Railway: healthcheck precisa de /api/healthz
     logger.error({ err }, "Database bootstrap failed (app will start without DB)");
   }
 }
