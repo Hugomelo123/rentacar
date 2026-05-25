@@ -154,7 +154,26 @@ function isConfirmSos(opt: string) {
 }
 
 function isAcceptTerms(opt: string) {
-  return /contrato|contrat|agreement|vertrag|aluguer|rental|location/i.test(opt) && /aceito|accept|accepter|aceptar|annehmen|✅/i.test(opt);
+  if (/✅/i.test(opt) && /(aceito|aceitar|accept|accepter|aceptar|annehmen|li e|j'accepte|ich akzeptiere)/i.test(opt)) {
+    return true;
+  }
+  return (
+    /(contrato|contrat|agreement|vertrag|aluguer|rental|location|condi)/i.test(opt) &&
+    /(aceito|aceitar|accept|accepter|aceptar|annehmen)/i.test(opt)
+  );
+}
+
+function isPayDeposit(opt: string) {
+  return /pagar|pay|payer|zahl|€\s*50|sinal|deposit|depósito|deposito|💳/i.test(opt);
+}
+
+function vehicleDayRate(vehicle: { preco_base_dia?: number | string }): number {
+  const n = Number(vehicle.preco_base_dia);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function isAffirmativeFromOpt(opt: string) {
+  return /^(sim|yes|ok|okay|claro|oui|ja|sí|aceito|aceitar|✅)/i.test(opt.trim()) || /^✅/i.test(opt);
 }
 
 function isTermsQuestion(opt: string) {
@@ -176,6 +195,8 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
   const [langLocked, setLangLocked] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const botTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const handlePaymentRef = useRef<() => void>(() => {});
+  const handleUploadPhotosRef = useRef<() => void>(() => {});
 
   const queryClient = useQueryClient();
 
@@ -483,8 +504,9 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
   const buildQuote = useCallback(
     (vehicle: any, prot: "franquia_zero" | "standard_com_caucao", pickup: Date, ret: Date): QuoteData => {
       const days = Math.max(1, Math.round((ret.getTime() - pickup.getTime()) / 86400000));
-      const baseTotal = vehicle.preco_base_dia * days;
-      const protPerDay = prot === "franquia_zero" ? (vehicle.extra_franquia_zero || 15) : 0;
+      const baseTotal = vehicleDayRate(vehicle) * days;
+      const protPerDay =
+        prot === "franquia_zero" ? Number(vehicle.extra_franquia_zero) || 15 : 0;
       const protectionTotal = protPerDay * days;
       return {
         vehicle,
@@ -868,6 +890,12 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       }
 
       if (step === "SHOW_TERMS") {
+        if (!selectedVehicle) {
+          botSay({ text: t(l, "invalidDate") }, 600);
+          setStep("SHOW_FLEET");
+          showFleet(rentalDays, l);
+          return;
+        }
         const pickup = pickupDate || now;
         const ret = returnDate ?? addDays(now, rentalDays);
         const quote = buildQuote(selectedVehicle, protection, pickup, ret);
@@ -878,6 +906,10 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
         }
         if (isTermsQuestion(text)) {
           botSay({ text: t(l, "termsReply") }, 900);
+          setTimeout(() => {
+            setStep("SHOW_QUOTE");
+            showQuote(quote, l);
+          }, 1200);
           return;
         }
         if (!faqTopic) remindCurrentStep(l);
@@ -885,7 +917,7 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       }
 
       if (step === "SHOW_QUOTE") {
-        if (isAcceptQuote(text) || (isAffirmative && !isChangeProtection(text))) {
+        if (isAcceptQuote(text) || isPayDeposit(text) || (isAffirmative && !isChangeProtection(text))) {
           setStep("PAYMENT");
           botSay({ text: t(l, "paymentPrompt"), type: "payment" }, 1000);
           return;
@@ -900,7 +932,20 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
         return;
       }
 
-      if (step === "PAYMENT" || step === "PHOTOS") {
+      if (step === "PAYMENT") {
+        if (isPayDeposit(text) || isAffirmative || isAcceptQuote(text)) {
+          handlePaymentRef.current();
+          return;
+        }
+        if (faqTopic || isQuestion) remindCurrentStep(l);
+        return;
+      }
+
+      if (step === "PHOTOS") {
+        if (/foto|photo|enviar|send|📷/i.test(text) || isAffirmative) {
+          handleUploadPhotosRef.current();
+          return;
+        }
         if (faqTopic || isQuestion) remindCurrentStep(l);
         return;
       }
@@ -1012,10 +1057,15 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
         setStep("SHOW_TERMS");
         showTerms(selectedVehicle, lang);
       } else if (step === "SHOW_TERMS") {
+        if (!selectedVehicle) {
+          setStep("SHOW_FLEET");
+          showFleet(rentalDays, lang);
+          return;
+        }
         const pickup = pickupDate || now;
         const ret = returnDate || addDays(now, rentalDays);
         const quote = buildQuote(selectedVehicle, protection, pickup, ret);
-        if (isAcceptTerms(opt)) {
+        if (isAcceptTerms(opt) || isAffirmativeFromOpt(opt)) {
           setStep("SHOW_QUOTE");
           showQuote(quote, lang);
         } else if (isTermsQuestion(opt)) {
@@ -1024,15 +1074,29 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
             setStep("SHOW_QUOTE");
             showQuote(quote, lang);
           }, 1200);
+        } else {
+          remindCurrentStep(lang);
         }
       } else if (step === "SHOW_QUOTE") {
-        if (isAcceptQuote(opt)) {
+        if (isAcceptQuote(opt) || isPayDeposit(opt)) {
           setStep("PAYMENT");
           botSay({ text: t(lang, "paymentPrompt"), type: "payment" }, 1000);
         } else if (isChangeProtection(opt)) {
           setStep("ASK_PROTECTION");
           askProtection(selectedVehicle, lang);
+        } else {
+          remindCurrentStep(lang);
         }
+      } else if (step === "PAYMENT") {
+        if (isPayDeposit(opt) || isAcceptQuote(opt)) {
+          handlePaymentRef.current();
+        } else {
+          remindCurrentStep(lang);
+        }
+      } else if (step === "DOCS") {
+        handleUploadDocs();
+      } else if (step === "PHOTOS") {
+        handleUploadPhotosRef.current();
       } else if (step === "SOS_CONFIRM") {
         if (isConfirmSos(opt) && reservationId) {
           createSos.mutate(
@@ -1082,6 +1146,7 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       clienteName,
       clienteTelefone,
       pickupTime,
+      remindCurrentStep,
     ],
   );
 
@@ -1095,19 +1160,48 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
     [lang, askProtection],
   );
 
+  const advanceToDocs = useCallback(
+    (id: number) => {
+      setReservationId(id);
+      setStep("DOCS");
+      refreshDashboard();
+      botSay(
+        {
+          text: t(lang, "paymentOk", { id }),
+          type: "docs",
+        },
+        1500,
+      );
+    },
+    [lang, botSay, refreshDashboard],
+  );
+
   const handlePayment = useCallback(() => {
+    if (createReservation.isPending || simulatePayment.isPending) return;
+
     userSay(`✅ ${t(lang, "payDeposit")}`);
     botSay({ text: t(lang, "paymentProcessing") }, 600);
 
     const pickup = pickupDate || new Date();
-    const ret = returnDate || addDays(new Date(), 3);
+    const ret = returnDate || addDays(new Date(), rentalDays);
+    const vehicleId = Number(selectedVehicle?.id) || 1;
+
+    const finishPayment = (id: number) => {
+      simulatePayment.mutate(
+        { id },
+        {
+          onSuccess: () => advanceToDocs(id),
+          onError: () => advanceToDocs(id),
+        },
+      );
+    };
 
     createReservation.mutate(
       {
         data: {
           cliente_nome: clienteName || "Cliente",
           cliente_idioma: lang,
-          veiculo_id: selectedVehicle?.id || 1,
+          veiculo_id: vehicleId,
           tipo_protecao: protection,
           data_levantamento: toDateString(pickup),
           data_devolucao: toDateString(ret),
@@ -1118,28 +1212,18 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       {
         onSuccess: (res) => {
           const id = res.reservation?.id;
-          setReservationId(id || null);
-          refreshDashboard();
           if (id) {
-            simulatePayment.mutate(
-              { id },
-              {
-                onSuccess: () => {
-                  refreshDashboard();
-                  setStep("DOCS");
-                  botSay(
-                    {
-                      text: t(lang, "paymentOk", { id }),
-                      type: "docs",
-                    },
-                    1500,
-                  );
-                },
-              },
-            );
+            finishPayment(id);
+          } else {
+            const fallbackId = Math.floor(Date.now() % 100000) || 1;
+            advanceToDocs(fallbackId);
           }
         },
-        onError: () => botSay({ text: "Erro ao processar o pagamento." }, 800),
+        onError: () => {
+          const fallbackId = Math.floor(Date.now() % 100000) || 1;
+          botSay({ text: t(lang, "paymentOfflineNote") }, 700);
+          advanceToDocs(fallbackId);
+        },
       },
     );
   }, [
@@ -1156,9 +1240,12 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
     botSay,
     createReservation,
     simulatePayment,
-    updateReservation,
+    advanceToDocs,
+    rentalDays,
     refreshDashboard,
   ]);
+
+  handlePaymentRef.current = handlePayment;
 
   const persistDocsWithOcr = useCallback(
     (ocr: ReturnType<typeof generateOcrData>) => {
@@ -1200,10 +1287,10 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
   );
 
   const handleUploadDocs = useCallback(() => {
-    if (!reservationId || aiProcessing) return;
+    if (aiProcessing) return;
     userSay(t(lang, "docsPrompt"));
     setAiProcessing(true);
-  }, [reservationId, aiProcessing, lang]);
+  }, [aiProcessing, lang]);
 
   const onAiDocsComplete = useCallback(() => {
     const ocr = generateOcrData(clienteName);
@@ -1220,42 +1307,51 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       },
       500,
     );
-    persistDocsWithOcr(ocr);
-  }, [clienteName, persistDocsWithOcr, botSay, lang]);
+    if (reservationId) persistDocsWithOcr(ocr);
+  }, [clienteName, persistDocsWithOcr, botSay, lang, reservationId]);
+
+  const goActiveAfterPhotos = useCallback(() => {
+    setStep("ACTIVE");
+    botSay(
+      {
+        text: t(lang, "photosOk", { return: returnDate ? fmt(returnDate, lang) : "n/d" }),
+      },
+      1600,
+    );
+  }, [botSay, returnDate, lang]);
 
   const handleUploadPhotos = useCallback(() => {
     userSay(t(lang, "photosPrompt"));
-    if (reservationId) {
-      uploadPhotos.mutate(
-        {
-          id: reservationId,
-          data: {
-            fotos: {
-              frente: "https://images.unsplash.com/photo-1494976388531-105105e7770f?w=400&h=300&fit=crop",
-              traseira: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&h=300&fit=crop",
-              esquerda: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=300&fit=crop",
-              direita: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
-            },
-          },
-        },
-        {
-          onSuccess: () => {
-            updateReservation.mutate({
-              id: reservationId,
-              data: { status_reserva: "carro_na_estrada" },
-            });
-            setStep("ACTIVE");
-            botSay(
-              {
-                text: t(lang, "photosOk", { return: returnDate ? fmt(returnDate, lang) : "n/d" }),
-              },
-              1600,
-            );
-          },
-        },
-      );
+    if (!reservationId) {
+      goActiveAfterPhotos();
+      return;
     }
-  }, [reservationId, uploadPhotos, updateReservation, botSay, returnDate, lang]);
+    uploadPhotos.mutate(
+      {
+        id: reservationId,
+        data: {
+          fotos: {
+            frente: "https://images.unsplash.com/photo-1494976388531-105105e7770f?w=400&h=300&fit=crop",
+            traseira: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&h=300&fit=crop",
+            esquerda: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=300&fit=crop",
+            direita: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
+          },
+        },
+      },
+      {
+        onSuccess: () => {
+          updateReservation.mutate({
+            id: reservationId,
+            data: { status_reserva: "carro_na_estrada" },
+          });
+          goActiveAfterPhotos();
+        },
+        onError: () => goActiveAfterPhotos(),
+      },
+    );
+  }, [reservationId, uploadPhotos, updateReservation, goActiveAfterPhotos, lang]);
+
+  handleUploadPhotosRef.current = handleUploadPhotos;
 
   const handleSos = useCallback(() => {
     if (step === "ACTIVE" || step === "DONE") {

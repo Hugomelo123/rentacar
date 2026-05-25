@@ -193,7 +193,7 @@ const T: Record<ChatLang, Dict> = {
     vehicleSelected:
       "*{vehicle}* selecionado! 🚗\n\nAntes do orçamento, escolha o *plano de proteção*:\n\n🛡️ *Franquia ZERO*, sem stress, sem caução bloqueada\n💳 *Standard*, caução no cartão (libertada após devolução sem danos)",
     rentalTerms:
-      "📜 *CONDIÇÕES GERAIS DE ALUGUER, Autocunha Rent-a-Car*\n\n✅ *Incluído no contrato:*\n• Seguro de responsabilidade civil (mínimo legal PT)\n• Assistência em estrada 24h na Madeira\n• Quilometragem: *ilimitada* na ilha\n• 2º condutor gratuito (mediante validação de documentos)\n\n⛽ *Combustível:* Devolver com o mesmo nível (política *Cheio/Cheio*). Caso contrário: taxa de reabastecimento + serviço.\n\n👤 *Condutor:* Mínimo *21 anos* e carta com mais de 1 ano. Condutor jovem (21-23): taxa adicional.\n\n💳 *Caução (plano Standard):* Bloqueio no cartão até €{caucao}. Libertada em 5-7 dias úteis após inspeção.\n\n🚫 *Não permitido:* Fumar no veículo • Condução fora da Madeira sem autorização • Uso em competição\n\n❌ *Cancelamento:* Gratuito até 48h antes do levantamento. Após: 50% do valor ou crédito em futura reserva.\n\n📄 O contrato completo será enviado por email após confirmação. Ao aceitar, declara que leu e concorda com estes termos.",
+      "📜 *CONDIÇÕES GERAIS DE ALUGUER, Autocunha Rent-a-Car*\n\n✅ *Incluído no contrato:*\n• Seguro de responsabilidade civil (mínimo legal PT)\n• Assistência em estrada 24h na Madeira\n• Quilometragem: *ilimitada* na ilha\n• 2º condutor gratuito (mediante validação de documentos)\n\n⛽ *Combustível:* Devolver com o mesmo nível (política *Cheio/Cheio*). Caso contrário: taxa de reabastecimento + serviço.\n\n👤 *Condutor:* Mínimo *21 anos* e carta com mais de 1 ano. Condutor jovem (21-23): taxa adicional.\n\n💳 *Caução (plano Standard):* Bloqueio no cartão até €{caucao}. Libertada em 5-7 dias úteis após inspeção.\n\n🚫 *Não permitido:* Fumar no veículo • Condução fora da Madeira sem autorização • Uso em competição\n\n❌ *Cancelamento:* Gratuito até 48h antes do levantamento. Após: 50% do valor ou crédito em futura reserva.\n\n🤖 *Pré-check-in inteligente:* após o sinal, envia fotos do passaporte/BI e carta; a IA valida os dados *antes do voo* (no demonstrador usa OCR simulado; em produção liga ao motor real).\n\n📄 O contrato completo será enviado por email após confirmação. Ao aceitar, declara que leu e concorda com estes termos.",
     acceptTerms: "✅ Li e aceito o Contrato de Aluguer",
     termsQuestions: "❓ Tenho uma dúvida (falar com equipa)",
     termsReply:
@@ -208,6 +208,8 @@ const T: Record<ChatLang, Dict> = {
     paymentProcessing: "A processar pagamento...",
     paymentOk:
       "✅ *Pagamento confirmado!*\n\n🎉 Reserva *#{id}* formalizada.\n📄 Contrato enviado para o seu email.\n\n*Pré-check-in (obrigatório):* envie fotos nítidas de:\n• 📄 Passaporte ou BI\n• 🚗 Carta de condução válida",
+    paymentOfflineNote:
+      "⚠️ Ligação ao servidor instável; continuo em modo demonstração para não o bloquear.",
     docsPrompt: "📎 Documentos enviados",
     docsOk:
       "✅ *Documentos verificados pela IA!*\n\n👤 *{nome}*\n📄 Doc: `{doc}`\n📅 Validade: {validade}\n\nPré-check-in concluído. No dia do levantamento envie 4 fotos do veículo.",
