@@ -1,6 +1,7 @@
 import {
   type ChatLang,
   detectLanguage,
+  isLanguageOnlyInput,
   localeFor,
   parseDaysFromText,
   pickupTimeOptions,
@@ -133,6 +134,7 @@ function normalize(text: string) {
 }
 
 function extractName(text: string): string | undefined {
+  if (isLanguageOnlyInput(text)) return undefined;
   if (detectFaq(text) || QUESTION_HINT.test(text)) return undefined;
   const patterns = [
     /(?:chamo-me|sou (?:o|a)|my name is|i'?m|i am|je m'appelle|je suis|me llamo|soy|ich hei[sß]e|ich bin)\s+([a-zA-ZÀ-ÿ][a-zA-ZÀ-ÿ\s'-]{1,40})/i,
@@ -147,6 +149,8 @@ function extractName(text: string): string | undefined {
   const skip = new Set([
     "hi", "hello", "ola", "olá", "hola", "bonjour", "hallo", "hey", "preciso", "quero", "need",
     "want", "carro", "car", "rent", "alugar", "reserva", "booking",
+    "pt", "en", "fr", "es", "de", "por", "eng", "fra", "esp", "deu",
+    "português", "portugues", "english", "français", "francais", "español", "espanol", "deutsch",
   ]);
   const filtered = words.filter((w) => !skip.has(w.toLowerCase()) && !/\d/.test(w));
   if (filtered.length >= 1 && filtered.length <= 4 && !/\?/.test(text)) {

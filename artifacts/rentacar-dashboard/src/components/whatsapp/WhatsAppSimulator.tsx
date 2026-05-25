@@ -26,6 +26,7 @@ import {
   getLinkWelcomeIntro,
   parseLanguageFromChoice,
   isCustomDurationOption,
+  isLanguageOnlyInput,
   localeFor,
   horaFromFlightText,
   horaFromPickupSlot,
@@ -556,23 +557,6 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       if (step === "ASK_LANGUAGE") {
         const picked = parseLanguageFromChoice(text) ?? detectLanguage(text);
         applyLanguage(picked);
-        l = picked;
-
-        const looksLikeBooking = /\b(carro|rent|alugar|reserv|suv|amanh|tomorrow|dias|days)\b/i.test(text);
-        const name =
-          analysis.entities.name ??
-          (!looksLikeBooking && !analysis.isQuestion && text.trim().length >= 2 ? text.trim() : undefined);
-
-        if (isValidDisplayName(name)) {
-          setClienteName(name!);
-          setStep("ASK_PHONE");
-          botSay({ text: t(picked, "langConfirmed") }, 500);
-          const ackCtx: HumanCtx = { ...humanCtx(), name: name! };
-          botSay({ text: getHumanAck(picked, "name", ackCtx) }, 900);
-          askPhone(name!, picked);
-          return;
-        }
-
         setStep("GREETING");
         confirmLanguageAndAskName(picked);
         return;
@@ -642,12 +626,26 @@ export function WhatsAppSimulator({ hideHeader }: { hideHeader?: boolean }) {
       }
 
       if (step === "GREETING") {
+        if (isLanguageOnlyInput(text)) {
+          const picked = parseLanguageFromChoice(text) ?? detectLanguage(text);
+          applyLanguage(picked);
+          l = picked;
+          botSay({ text: t(picked, "langConfirmed") }, 500);
+          botSay({ text: t(picked, "welcomeIntro") }, 900);
+          return;
+        }
+
         const looksLikeBooking = /\b(carro|rent|alugar|reserv|suv|amanh|tomorrow|dias|days|semana)\b/i.test(
           text,
         );
         const name =
           entities.name ??
-          (!onlyFaq && !isQuestion && !isGreeting && !looksLikeBooking && text.trim().length >= 2
+          (!onlyFaq &&
+          !isQuestion &&
+          !isGreeting &&
+          !looksLikeBooking &&
+          !isLanguageOnlyInput(text) &&
+          text.trim().length >= 2
             ? text.trim()
             : undefined);
         const guestName = name ?? (entities.pickupDate || entities.days ? "Cliente" : undefined);

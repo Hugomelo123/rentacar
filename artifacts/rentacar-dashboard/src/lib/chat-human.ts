@@ -1,5 +1,5 @@
 import type { ChatLang } from "./chat-i18n";
-import { t } from "./chat-i18n";
+import { isLanguageOnlyInput, t } from "./chat-i18n";
 import type { AnalyzeResult, FaqTopic } from "./chat-intent";
 import { formatDateShort, getFaqAnswer, getStepReminder } from "./chat-intent";
 
@@ -75,7 +75,11 @@ export function isValidDisplayName(name: string | undefined): boolean {
   const n = (name ?? "").trim();
   if (n.length < 2) return false;
   if (/^cliente$/i.test(n)) return false;
-  return /[a-zA-ZÀ-ÿ]{2,}/.test(n);
+  if (isLanguageOnlyInput(n)) return false;
+  if (!/[a-zA-ZÀ-ÿ]{2,}/.test(n)) return false;
+  const words = n.split(/\s+/).filter(Boolean);
+  if (words.length === 1 && words[0].length < 3) return false;
+  return true;
 }
 
 export function getHumanAck(

@@ -12,8 +12,56 @@ export function languageOptionLabels(): string[] {
   return LANG_OPTIONS.map((o) => o.label);
 }
 
+const LANG_CODE_MAP: Record<string, ChatLang> = {
+  pt: "pt",
+  por: "pt",
+  portugues: "pt",
+  português: "pt",
+  portuguese: "pt",
+  en: "en",
+  eng: "en",
+  english: "en",
+  ingles: "en",
+  inglês: "en",
+  fr: "fr",
+  fra: "fr",
+  french: "fr",
+  francais: "fr",
+  français: "fr",
+  es: "es",
+  esp: "es",
+  spanish: "es",
+  espanol: "es",
+  español: "es",
+  de: "de",
+  deu: "de",
+  german: "de",
+  deutsch: "de",
+  alemao: "de",
+  alemão: "de",
+};
+
+/** Resposta só de idioma (ex: «pt», «english») — nunca é nome. */
+export function isLanguageOnlyInput(text: string): boolean {
+  const raw = text.trim();
+  if (!raw) return false;
+  const key = raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (LANG_CODE_MAP[key]) return true;
+  if (parseLanguageFromChoice(raw)) return true;
+  return false;
+}
+
 export function parseLanguageFromChoice(text: string): ChatLang | null {
   const raw = text.trim();
+  const key = raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  if (LANG_CODE_MAP[key]) return LANG_CODE_MAP[key];
+
   for (const opt of LANG_OPTIONS) {
     if (raw === opt.label) return opt.lang;
     if (opt.aliases.some((re) => re.test(raw))) return opt.lang;
