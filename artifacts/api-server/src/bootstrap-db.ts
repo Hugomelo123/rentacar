@@ -17,8 +17,8 @@ export async function bootstrapDatabase(): Promise<void> {
 
   try {
     const sql = readFileSync(sqlPath, "utf8");
-    const { pool } = await import("@workspace/db");
-    await pool.query(sql);
+    const { getPool } = await import("@workspace/db");
+    await getPool().query(sql);
     logger.info("PostgreSQL schema ready");
   } catch (err) {
     // Não bloquear arranque no Railway: healthcheck precisa de /api/healthz
