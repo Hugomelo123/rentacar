@@ -24,14 +24,15 @@ No [Railway Dashboard](https://railway.app):
 2. **+ New** → **GitHub Repo** → `Hugomelo123/rentacar`.
 3. Abra o **único** serviço criado → **Settings**:
    - **Root Directory:** deixe **vazio** `/` (raiz do repo).
-   - **Builder:** **Dockerfile** (não Nixpacks / Railpack por pacote).
+   - **Builder:** **Dockerfile** (⚠️ NÃO use Railpack/Nixpacks — senão volta `frozen-lockfile` e falha).
    - **Dockerfile path:** `Dockerfile`
-4. **+ New** → **Database** → **PostgreSQL**.
-5. No serviço da app → **Variables** (obrigatório, senão o deploy falha ou a app não arranca):
+   - **Clear build cache** → redeploy (Settings ou Deployments)
+4. Nos logs do build deve aparecer: `=== RENTACAR DOCKER BUILD v4 ===` e `bookworm-slim`.  
+   Se vir `alpine` + `frozen-lockfile`, o serviço **não** está a usar o repo atualizado.
+5. **+ New** → **Database** → **PostgreSQL**.
+6. No serviço da app → **Variables** (obrigatório):
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
    - `NODE_ENV` = `production`
-   - (`PORT` é definido automaticamente pelo Railway)
-6. **Settings** → confirme **Builder: Dockerfile**
 7. **Deploy** / **Redeploy**.
 
 Se o build falhar com `pnpm lockfile` ou `vite not found`, faça pull do `main` mais recente (Dockerfile corrigido).

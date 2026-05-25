@@ -1,5 +1,6 @@
-# Deploy único: API + painel (Linux — Railway) — build v2
+# RENTACAR Railway build v4 — deve aparecer nos logs
 FROM node:20-bookworm-slim AS build
+RUN echo "=== RENTACAR DOCKER BUILD v4 ==="
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /app

@@ -1,0 +1,9 @@
+# Fallback se o Railway usar Nixpacks/Railpack em vez do Dockerfile
+[phases.install]
+cmds = ["pnpm install --no-frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm run build:railway"]
+
+[start]
+cmd = "node artifacts/api-server/dist/index.mjs"
