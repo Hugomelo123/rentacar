@@ -17,10 +17,8 @@ export async function bootstrapDatabase(): Promise<void> {
 
   try {
     const sql = readFileSync(sqlPath, "utf8");
-    const pg = await import("pg");
-    const pool = new pg.default.Pool({ connectionString: url });
+    const { pool } = await import("@workspace/db");
     await pool.query(sql);
-    await pool.end();
     logger.info("PostgreSQL schema ready");
   } catch (err) {
     logger.error({ err }, "Database bootstrap failed");
