@@ -1,4 +1,4 @@
-# Deploy único: API + painel (Linux — Railway)
+# Deploy único: API + painel (Linux — Railway) — build v2
 FROM node:20-bookworm-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
