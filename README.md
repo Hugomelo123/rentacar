@@ -145,6 +145,17 @@ A lógica de conversa está em `artifacts/rentacar-dashboard/src/lib/` (`chat-i1
 
 ---
 
+## Deploy (Railway)
+
+O Railway pode criar **vários serviços** automaticamente (um por pacote do monorepo). Só precisa de **2**:
+
+- `artifacts/api-server` (API)
+- `artifacts/rentacar-dashboard` (frontend)
+
+Apague os serviços `@workspace/db`, `api-zod`, `api-client`, `api-spec` e `mockup-sandbox`. Guia completo: **[RAILWAY.md](./RAILWAY.md)**
+
+---
+
 ## Licença
 
 MIT — ver ficheiro de licença do projeto, se aplicável.
