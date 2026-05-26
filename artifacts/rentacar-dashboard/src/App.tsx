@@ -6,20 +6,26 @@ import { Shell } from "@/components/layout/Shell";
 import Dashboard from "@/pages/Dashboard";
 import Fleet from "@/pages/Fleet";
 import Settings from "@/pages/Settings";
+import Welcome from "@/pages/Welcome";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
 function Router() {
   return (
-    <Shell>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/fleet" component={Fleet} />
-        <Route path="/settings" component={Settings} />
-        <Route component={NotFound} />
-      </Switch>
-    </Shell>
+    <Switch>
+      <Route path="/" component={Welcome} />
+      <Route>
+        <Shell>
+          <Switch>
+            <Route path="/dashboard" component={Dashboard} />
+            <Route path="/fleet" component={Fleet} />
+            <Route path="/settings" component={Settings} />
+            <Route component={NotFound} />
+          </Switch>
+        </Shell>
+      </Route>
+    </Switch>
   );
 }
 

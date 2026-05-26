@@ -3,11 +3,12 @@ import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Car, Settings, MessageCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WhatsAppSimulator } from "@/components/whatsapp/WhatsAppSimulator";
+import { consumeWhatsAppFocus } from "@/lib/intro";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Live Feed" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Live Feed" },
   { href: "/fleet", icon: Car, label: "Frota" },
   { href: "/settings", icon: Settings, label: "Config" },
 ];
@@ -26,7 +27,9 @@ function useIsDesktop() {
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const [whatsappOpen, setWhatsappOpen] = useState(true);
+  const [whatsappOpen, setWhatsappOpen] = useState<boolean>(
+    () => consumeWhatsAppFocus() || true,
+  );
   const isDesktop = useIsDesktop();
 
   return (
@@ -83,9 +86,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {/* Mobile top bar */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
           <div className="h-8 w-8 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold text-sm">
-            R
+            A
           </div>
-          <span className="font-semibold text-sm">RentaCar Dashboard</span>
+          <span className="font-semibold text-sm">Autocunha · Painel</span>
           <button
             onClick={() => setWhatsappOpen(true)}
             className="relative p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
