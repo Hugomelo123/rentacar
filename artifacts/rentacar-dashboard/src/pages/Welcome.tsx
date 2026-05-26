@@ -6,10 +6,10 @@ import {
   Car,
   LayoutDashboard,
   MessageCircle,
-  Sparkles,
+  FileCheck,
   MapPin,
   Shield,
-  Zap,
+  Plane,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,24 +28,24 @@ function fadeDelay(i: number) {
 const pillars = [
   {
     icon: MessageCircle,
-    title: "Sofia no WhatsApp",
-    desc: "Reserva conversacional — datas, viatura, contrato e documentos.",
+    title: "Reserva no WhatsApp",
+    desc: "A Sofia trata de datas, viatura, caução e contrato — tudo por mensagem.",
     accent: "text-[#25D366]",
     bg: "bg-[#25D366]/10 border-[#25D366]/25",
   },
   {
     icon: LayoutDashboard,
-    title: "Painel em tempo real",
-    desc: "Reservas, frota, pagamentos e alertas SOS num só lugar.",
+    title: "Painel da loja",
+    desc: "Reservas, frota, pagamentos e alertas SOS visíveis em tempo real.",
     accent: "text-primary",
     bg: "bg-primary/10 border-primary/25",
   },
   {
-    icon: Sparkles,
-    title: "Pré-check-in IA",
-    desc: "Validação simulada de documentos antes do cliente chegar ao balcão.",
-    accent: "text-amber-400",
-    bg: "bg-amber-400/10 border-amber-400/25",
+    icon: FileCheck,
+    title: "Pré-check-in",
+    desc: "Documentos enviados antes da chegada — menos tempo de espera no balcão.",
+    accent: "text-emerald-400",
+    bg: "bg-emerald-400/10 border-emerald-400/25",
   },
 ] as const;
 
@@ -130,8 +130,8 @@ export default function Welcome() {
             </div>
           </div>
           <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur-sm">
-            <Zap className="h-3 w-3 text-amber-400" />
-            Demonstração interativa
+            <Car className="h-3 w-3 text-primary" />
+            Versão demonstração
           </span>
         </motion.header>
 
@@ -158,9 +158,13 @@ export default function Welcome() {
             <h1 className="max-w-xl text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
               Autocunha Rent-a-Car
             </h1>
-            <p className="mt-3 max-w-lg text-base text-muted-foreground sm:text-lg">
-              Do <span className="text-[#25D366] font-medium">WhatsApp</span> ao{" "}
-              <span className="text-primary font-medium">balcão</span> — reservas inteligentes com menos filas.
+            <p className="mt-3 max-w-lg text-base text-muted-foreground sm:text-lg leading-relaxed">
+              Aluguer de carros na Madeira — reserve pelo{" "}
+              <span className="text-[#25D366] font-medium">WhatsApp</span>, levante no{" "}
+              <span className="text-primary font-medium">balcão</span> com menos filas.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground/80">
+              Aeroporto do Funchal · Frota local · Atendimento em PT, EN, FR, ES
             </p>
           </motion.div>
 
@@ -174,9 +178,9 @@ export default function Welcome() {
           >
             <FlowNode icon={MessageCircle} label="Cliente" sub="WhatsApp" green />
             <FlowPulse />
-            <FlowNode icon={Sparkles} label="Sofia IA" sub="Pré-check-in" amber />
+            <FlowNode icon={FileCheck} label="Sofia" sub="Reserva & docs" emerald />
             <FlowPulse />
-            <FlowNode icon={LayoutDashboard} label="Operação" sub="Painel" blue />
+            <FlowNode icon={LayoutDashboard} label="Loja" sub="Painel" blue />
           </motion.div>
 
           {/* Pilares */}
@@ -227,7 +231,7 @@ export default function Welcome() {
               onClick={() => enter("whatsapp")}
             >
               <MessageCircle className="h-5 w-5 text-[#25D366]" />
-              Começar pelo WhatsApp — Sofia
+              Começar pelo WhatsApp com a Sofia
             </Button>
 
             <label className="flex cursor-pointer items-center justify-center gap-2 pt-1 text-xs text-muted-foreground">
@@ -254,13 +258,13 @@ export default function Welcome() {
           className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border/60 pt-6 text-[11px] text-muted-foreground"
         >
           <span className="inline-flex items-center gap-1">
-            <Car className="h-3 w-3" />
-            Frota & reservas em tempo real
+            <Plane className="h-3 w-3" />
+            Levantamento no aeroporto
           </span>
           <span className="hidden sm:inline text-border">·</span>
           <span className="inline-flex items-center gap-1">
             <Shield className="h-3 w-3" />
-            Ambiente seguro de demo
+            Dados fictícios — ambiente de demo
           </span>
         </motion.footer>
       </div>
@@ -273,22 +277,22 @@ function FlowNode({
   label,
   sub,
   green,
-  amber,
+  emerald,
   blue,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   sub: string;
   green?: boolean;
-  amber?: boolean;
+  emerald?: boolean;
   blue?: boolean;
 }) {
   const ring = green
     ? "border-[#25D366]/40 bg-[#25D366]/10"
-    : amber
-      ? "border-amber-400/40 bg-amber-400/10"
+    : emerald
+      ? "border-emerald-400/40 bg-emerald-400/10"
       : "border-primary/40 bg-primary/10";
-  const iconCls = green ? "text-[#25D366]" : amber ? "text-amber-400" : "text-primary";
+  const iconCls = green ? "text-[#25D366]" : emerald ? "text-emerald-400" : "text-primary";
 
   return (
     <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1">
